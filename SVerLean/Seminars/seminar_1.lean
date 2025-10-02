@@ -13,7 +13,7 @@ def K : α → β → α :=
   sorry
 
 def C : (α → β → γ) → β → α → γ :=
-  sorry
+  fun f b a => f a b
 
 def projFirst : α → α → α :=
   sorry
@@ -64,6 +64,23 @@ def uncurry (f : α → (β → γ)) : α × β → γ :=
 
 /- # Задача 3. List -/
 
+def sum (li : List Nat) : Nat :=
+  match li with
+  | [] => 0
+  | List.cons head tail => head + sum tail
+
+def collatz (n : Nat) : Nat :=
+  if n == 0 then
+    0
+  else
+    collatz (n / 2)
+termination_by n
+decreasing_by grind
+    -- if n % 2 == 0 then
+    --   collatz (n / 2)
+    -- else
+    --   collatz (3 * n + 1)
+
 /--
 Напишите функцию `myMap` которая поэлементно применяет функцию `f` к элементам списка, т.е.
 `myMap [x, y, z, ...] = [f x, f y, f z, ...]`. Постарайтесь сделать ее как можно более полиморфной.
@@ -76,7 +93,14 @@ def List.myMap : sorry := sorry
 Напишите функцию `myZip` которая соединяет в лист пар два листа `x : List α` и `y : List β` так что
 `myZip [x₁, x₂, x₃, ...] [y₁, y₂, y₃, ...] = [(x₁, y₁), (x₂, y₂), (x₃, y₃), ...]`
 -/
-def List.myZip : sorry := sorry
+def List.myZip (xs : List α) (ys : List β) : List (α × β) :=
+  match xs, ys with
+  | x :: tail_x, y :: tail_y =>
+    (x, y) :: tail_x.myZip tail_y
+    --  (x, y) :: List.myZip tail_x tail_y
+  | _, _ => []
+
+#print List.myZip
 
 /--
 Напишите функцию `myCount` возвращающую количество элементов в листе, удовлетворяющих предикату `p`.

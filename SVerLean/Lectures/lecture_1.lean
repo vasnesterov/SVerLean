@@ -7,7 +7,7 @@ def square (n : Nat) : Nat :=
 
 #eval square 7
 
-#eval (square 7) + 3
+#eval square 7 + 3
 #eval square (7 + 3)
 
 #eval square "hello"
@@ -15,7 +15,9 @@ def square (n : Nat) : Nat :=
 def hello (name : String) :=
   String.append "Hello " name
 
--- #eval hello "Kitty"
+#eval hello "Kitty"
+
+
 
 #check 2 + 2
 #check (2 + 2 : Int)
@@ -26,12 +28,16 @@ def hello (name : String) :=
 
 #check (3e4 : Nat)
 
+-- Nat → Nat
 #check square
 
+-- Nat
 #check square 3
+
 
 def addSquares (n : Nat) (m : Nat) : Nat :=
   n * n + m * m
+
 
 #check addSquares
 
@@ -77,6 +83,7 @@ def addSquares' : Nat → Nat → Nat :=
 
 #check List Nat
 
+-- Type → Type
 #check List
 
 #check List Type
@@ -122,7 +129,8 @@ def isEmpty (li : List Nat) : Bool :=
 def isEmptyOrHeadEven (li : List Nat) : Bool :=
   match li with
   | [] => true
-  | List.cons head tail => head % 2 == 0
+  | List.cons head tail =>
+    head % 2 == 0
     -- if head % 2 == 0 then
     --   true
     -- else
@@ -138,10 +146,10 @@ def isEmptyOrHeadEven (li : List Nat) : Bool :=
 
 def myFind {α : Type} (p : α → Bool) (li : List α) : Option α :=
   match li with
-  | [] => none
+  | [] => Option.none
   | List.cons head tail =>
     if p head then
-      some head
+      Option.some head
     else
       myFind p tail
 
