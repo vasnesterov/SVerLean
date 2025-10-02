@@ -1,13 +1,10 @@
-# SVerLean
+# Верификация программ на Lean
 
-## GitHub configuration
+Это репозиторий курса по формальной верфикации программ в системе Lean, читаемый в Центральном Университете осенью 2025 года. Он будет пополнятся материалами (лекциями, семинарами, домашними заданиями) по мере движения курса.
 
-To set up your new GitHub repository, follow these steps:
+## С чего начать?
 
-* Under your repository name, click **Settings**.
-* In the **Actions** section of the sidebar, click "General".
-* Check the box **Allow GitHub Actions to create and approve pull requests**.
-* Click the **Pages** section of the settings sidebar.
-* In the **Source** dropdown menu, select "GitHub Actions".
-
-After following the steps above, you can remove this section from the README file.
+1. Установите git.
+2. Установите VS Code и Lean по [инструкции с официального сайта Lean](https://lean-lang.org/install/).
+3. В VS Code в расширении для Lean 4 нажмите Open Project -> Download Project и введите ссылку на этот репозиторий. Начнется скачивание репозитория и нужных зависимостей.
+4. Проверьте что все работает корректно, открыв файл `Test.lean` в корне репозитория. Файл должен прогрузиться без ошибок а строка с `#check` выдать сообщение `TopologicalSpace.{u} (X : Type u) : Type u`.
