@@ -303,6 +303,18 @@ where
     fibHelper n newFibs
 
 
+def binSearchSquareRoot (n left right : Nat) :=
+  if right - left ≤ 1 then
+    left
+  else
+    let middle := (left + right) / 2
+    if middle * middle ≤ n then
+      binSearchSquareRoot n middle right
+    else
+      binSearchSquareRoot n left middle
+termination_by right - left
+
+
 namespace Network
 
 /-
