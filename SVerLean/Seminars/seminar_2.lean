@@ -198,7 +198,7 @@ def play {Q₁ Q₂ : Type} (strategy₁ : Strategy Q₁) (strategy₂ : Strateg
 
 /-- Напишите функцию, которая принимает на вход стратегию соперника и
 выдает стратегию, которая побеждает против неё во всех раундах. -/
-def bestResponse {Q : Type} (opponent : Strategy Q) : Strategy Q where
+def bestResponse {Q : Type} (opponent : Strategy Q) : Strategy sorry where
   initState := sorry
   action q := sorry
   nextState q _ := sorry
