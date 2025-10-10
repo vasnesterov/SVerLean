@@ -21,7 +21,8 @@ def pt₂ : Point := ⟨-3, 4⟩
 -- "Dot notation":
 -- Если `pt₁` имеет тип `Point`, тогда `pt₁.someMethod` это
 -- синтаксический сахар для `Point.someMethod pt₁`
--- (если `Point.someMethod` принимает много аргументов, то `pt₁` подставляется
+-- (если `Point.someMethod` принимает много аргументов, то `pt₁`
+-- подставляется
 -- в первых из них, имеющий тип `Point`)
 #eval pt₁.x
 
@@ -88,7 +89,8 @@ def insertNode (network : Network) (node : Node) : Network where
 def insertNode' (network : Network) (node : Node) : Network :=
   { network with nodes := network.nodes.push node }
 
-def insertConnection (connection : Connection) (network : Network) : Network :=
+def insertConnection (connection : Connection)
+    (network : Network) : Network :=
   { network with connections := network.connections.push connection }
 
 #eval Network.empty
@@ -104,24 +106,33 @@ def twoNodeNetwork := singleNodeNetwork.insertNode node₂
 def twoNodeConnected := twoNodeNetwork.insertConnection connection
 
 def isConnected (network : Network) (sourceAddress targetAddress : String) : Bool :=
-  let sourceNode? := network.nodes.find? (fun n => n.address = sourceAddress && n.alive)
+  let sourceNode? : Option Node := network.nodes.find? (fun n => n.address == sourceAddress && n.alive)
   match sourceNode? with
   | none => false
   | some sourceNode =>
-    let targetNode? := network.nodes.find? (fun n => n.address = targetAddress && n.alive)
+    let targetNode? := network.nodes.find? (fun n => n.address == targetAddress && n.alive)
     match targetNode? with
     | none => false
     | some targetNode =>
       let connection? := network.connections.find?
         (fun c => c.source == sourceNode && c.destination == targetNode)
-      match connection? with
-      | none => false
-      | some _ => true
-      -- connection?.isSome
+      -- match connection? with
+      -- | none => false
+      -- | some _ => true
+      connection?.isSome
 
 #eval twoNodeConnected.isConnected "192.168.1.1" "192.168.1.2"
 
 end Network
+
+
+
+
+
+
+
+
+
 
 namespace Hidden
 
@@ -177,10 +188,10 @@ inductive Color'
 
 def Color.toMonochrome (c : Color) : Color :=
   match c with
-  | rgb r g b => monochrome ((r + g + b) / 3)
+  | rgb r ggg b => monochrome ((r + ggg + b) / 3)
   | monochrome v => monochrome v
 
-inductive Nat
+inductive Nat : Type
 | zero : Nat
 | succ (n : Nat) : Nat -- n ↦ n + 1
 
@@ -201,24 +212,31 @@ def Nat.pred (n : Nat) : Nat :=
 def Nat.isEven (n : Nat) : _root_.Bool :=
   match n with
   | zero => true
-  | succ m => ! (Nat.isEven m)
+  | succ m => (Nat.isEven m).not
 
 inductive List (α : Type) : Type
-| nil : List α
-| cons (head : α) (tail : List α) : List α
+| nil
+| cons (head : α) (tail : List α)
 
 def List.sum (xs : List Int) : Int :=
   match xs with
   | nil => 0
-  | cons head tail => head + List.sum tail
+  | cons head tail => head + tail.sum
+
+inductive Vector' (α : Type) (n : Nat)
+| nil : Vector' α Nat.zero
+| cons (n : Nat) (head : α) (tail : Vector' α n) : Vector' α (Nat.succ n)
 
 -- `Vector α n` - тип массивов элементов `α` фиксированной длины `n`
 inductive Vector (α : Type) : Nat → Type
 | nil : Vector α Nat.zero
 | cons {n : Nat} (head : α) (tail : Vector α n) : Vector α n.succ
 
+-- #check Vector.nil
+#check Vector Int Nat.zero.succ
+
 #check (Vector.nil : Vector Nat Nat.zero)
-#check Vector.cons 0 (Vector.nil : Vector Int Nat.zero)
+#check Vector.cons "first" (Vector.nil : Vector String Nat.zero)
 
 mutual
   inductive Even
@@ -231,24 +249,39 @@ end
 
 mutual
 
-def Even.toNat (e : Even) : Nat :=
-  match e with
-  | Even.even_zero => Nat.zero
-  | Even.even_succ n => Nat.succ (Odd.toNat n)
+  def Even.toNat (e : Even) : Nat :=
+    match e with
+    | Even.even_zero => Nat.zero
+    | Even.even_succ n => Nat.succ (Odd.toNat n)
 
-def Odd.toNat (o : Odd) : Nat :=
-  match o with
-  | Odd.odd_succ n => Nat.succ (Even.toNat n)
+  def Odd.toNat (o : Odd) : Nat :=
+    match o with
+    | Odd.odd_succ n => Nat.succ (Even.toNat n)
 
 end
 
 inductive Foo : Type
 | nil : Foo
-| bar (x : Foo → Nat) : Foo
+| bar (x : Nat → Foo) : Foo
 
-inductive Tree : Type
-| leaf : Tree
-| node (children : List Tree) : Tree
+#check Foo.nil
+#check Foo.bar (fun n => Foo.nil)
+
+#check Foo.bar (fun n =>
+  match n with
+  | Nat.zero => Foo.nil
+  | Nat.succ m => Foo.bar (fun k => Foo.nil)
+)
+
+mutual
+  inductive ListTree
+  | nil
+  | cons (head : Tree) (tail : ListTree)
+
+  inductive Tree : Type
+  | leaf : Tree
+  | node (children : ListTree) : Tree
+end
 
 end Hidden
 
@@ -303,7 +336,7 @@ where
     fibHelper n newFibs
 
 
-def binSearchSquareRoot (n left right : Nat) :=
+def binSearchSquareRoot (n left right : Nat) : Nat :=
   if right - left ≤ 1 then
     left
   else
@@ -313,7 +346,6 @@ def binSearchSquareRoot (n left right : Nat) :=
     else
       binSearchSquareRoot n left middle
 termination_by right - left
-
 
 namespace Network
 
