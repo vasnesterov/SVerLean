@@ -5,8 +5,9 @@ namespace hidden
 /- ## Задача 1. Контейнеры -/
 
 /-- Класс `Container α β` означает что тип `α` является контейнером для элементов типа `β`.
-Напишите необходимые поля для класса сами так чтобы его можно было использовать в фунциях ниже. -/
-class Container (α β : Type)
+Напишите необходимые поля для класса сами так чтобы его можно было использовать в фунциях ниже.
+Нужно ли где-то добавить `outParam`? -/
+class Container (α : Type) (β : Type)
 
 /-- Добавляет элемент в контейнер. -/
 def insert {α β : Type} [Container α β] (cont : α) (newElem : β) : α :=
@@ -28,8 +29,8 @@ def prod {α β : Type} [Container α β] (cont : α) : β :=
 
 /-- Считает минимум от элементов в контейнере. Добавьте недостающие тайпклассы для `β`.
 
-Hint: посмотрите какие классы используются в `List.min`. -/
-def min {α β : Type} [Container α β] (cont : α) : β :=
+Hint: посмотрите какие классы используются в `List.min?`. -/
+def min? {α β : Type} [Container α β] (cont : α) : Option β :=
   sorry
 
 /-- Собирает элементы контейнера в список -/
@@ -50,9 +51,9 @@ def testArray : Array Float := #[3.71, 2.14, 0.99]
 #guard contains testMap 24
 #guard contains (insert testMap 999) 999
 #guard ! (contains testMap 123456)
-#guard insertIfNew testMap 24 == testMap
+#guard (insertIfNew testMap 24).toList == testMap.toList
 #guard contains (insertIfNew testMap 33) 33
 #guard prod testList == 6
-#guard min testArray == 0.99
+#guard min testArray == .some 0.99
 
 /- P.S.: В качестве **бонусных** задач можно сдать `Enumerable BinTree` и `IsPrime` с семинара. -/

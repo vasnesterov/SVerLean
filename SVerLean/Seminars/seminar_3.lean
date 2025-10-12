@@ -64,18 +64,25 @@ structure Program (Q : Type) (α : Type) where
   /-- Начальное состояние -/
   initState : Q
   /-- Функция перехода -/
-  nextState : Q → Computation Q α
+  next : Q → Computation Q α
 
 /-- Напишите функцию для запуска программы. Если программа не завершилась через `maxSteps` шагов,
 возвращается дефолтное значение, иначе - результат вычисления программы. -/
-def Program.run {Q α : Type} [Inhabited α] (p : Program Q α) : α :=
+def Program.run {Q α : Type} [Inhabited α] (p : Program Q α) (maxSteps : Nat) : α :=
   sorry
 
 /-- Программа, складывающая первые `n` чисел. -/
-def sumFirst : Program sorry Nat := sorry
+def sumFirst (n : Nat) : Program sorry Nat := sorry
 
 /-- Программа, проверяющая что число простое. -/
 def isPrime (n : Nat) : Program sorry Bool := sorry
+
+#guard (isPrime 7).run 1000
+#guard !((isPrime 8).run 1000)
+-- Получится ли уложиться в 1000 шагов?
+#guard (isPrime 93053).run 1000
+#eval (isPrime 253009).run 1000
+
 
 /- Вообще в Lean есть возможность писать не совсем корректные рекурсивные функции, например: -/
 def Nat.find (p : Nat → Bool) (n : Nat) : Nat :=
@@ -140,14 +147,29 @@ instance : Enumerable Int where
 #eval [(num 0 : Int), num 1, num 2, num 3, num 4, num 5]
 
 /-- Напишите функцию которая ищет элемент перечислимого типа `α`, удовлетворяющий условию `p`. -/
-def find {α : Type} [Enumerable α] (p : α → Bool) (maxSteps : Nat) : Option α :=
-  sorry
+def find {α : Type} [Enumerable α] (p : α → Bool) (maxSteps : Nat) : Option α := sorry
+
+#guard find (fun (n : Int) => n * n - n == 6) 1000 == some (-2)
 
 /-- Если `α` перечислимый, то `Option α` тоже перечислимый. -/
 instance (α : Type) [Enumerable α] : Enumerable (Option α) := sorry
 
+#guard find (fun (o : Option Int) => o.isNone) 1000 == some none
+#guard find (fun (o : Option Int) => o.any (fun (n : Int) => n * n * n == -512)) 1000 == some (some (-8))
+
 /-- Если `α` и `β` перечислимые, то `α × β` перечислимый -/
 instance (α β : Type) [Enumerable α] [Enumerable β] : Enumerable (α × β) := sorry
+
+#guard (List.range 10).flatMap (fun i => (List.range 10).map (fun j => (i, j))) |>.all (fun p =>
+  let res := find (fun p' => p == p') 10000
+  res.any (fun p' => p' == p)
+)
+
+/-- Если `α` перечислимый, то `Bool → α` перечислимый -/
+instance (α : Type) [Enumerable α] : Enumerable (Bool → α) := sorry
+
+#guard find (fun (f : Bool → Int) => f false == 7) 1000 |>.isSome
+#guard find (fun (f : Bool → Int) => f true == (f false)^2 + 1) 1000 |>.isSome
 
 /-- Если тип перечислимый, на нем можно ввести порядок -/
 instance (α : Type) [Enumerable α] : LT α := sorry
