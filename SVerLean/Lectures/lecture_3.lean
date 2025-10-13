@@ -6,6 +6,29 @@ def List.mySum {α : Type} (li : List α) : α :=
   | [] => 0
   | head :: tail => head + tail.mySum
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def double {α : Type} (add : α → α → α) (a : α) : α :=
   add a a
 
@@ -77,6 +100,19 @@ class LinearOrder' (α : Type) extends LT α where
   trans : ∀ x y z : α, lt x y = true ∧ lt y z = true → lt x z = true
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 class Inhabited (α : Type) where
   default : α
 
@@ -109,9 +145,25 @@ def add {α : Type} [inst : Add' α] (x y : α) : α := inst.add x y
 
 infix:60 " +++ " => fun l r => add l r
 
-#eval (3 : Nat) +++ (3 : Nat)
+#eval 3 +++ 3
 
-end hidden
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 inductive Pos
 | one : Pos
@@ -132,12 +184,12 @@ def Nat.toPos (n : Nat) : Pos :=
 
 def two : Pos := 2
 
--- instance (n : Nat) : OfNat Pos n where
---   ofNat := Nat.toPos n
+instance (n : Nat) : OfNat Pos n where
+  ofNat := Nat.toPos n
 
--- def two' : Pos := 2
+def two' : Pos := 2
 
--- #eval two'
+#eval two'
 
 instance (n : Nat) [NeZero n] : OfNat Pos n where
   ofNat := Nat.toPos n
@@ -161,3 +213,26 @@ instance : Coe Pos Nat where
 #eval Nat.add two' two'
 
 #eval Int.add two' one
+
+
+
+
+
+
+
+
+
+def addNatPos (n : Nat) (p : Pos) : Pos :=
+  Nat.toPos (p.toNat + n)
+
+class HAdd (α : Type) (β : Type) (γ : Type) where
+  add (a : α) (b : β) : γ
+
+instance : HAdd Nat Pos Pos where
+  add := addNatPos
+
+def three := HAdd.add (1 : Nat) (2 : Pos)
+
+def three' : Pos := HAdd.add (1 : Nat) (2 : Pos)
+
+end hidden
