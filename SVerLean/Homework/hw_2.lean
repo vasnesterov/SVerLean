@@ -84,7 +84,7 @@ def Program.run (program : Program) : State :=
 def testProgram : Program :=
   [.set "x" (.num 1), .set "y" (.num 2), .set "z" (.add (.var "x") (.var "y"))]
 
-#guard (testProgram.run { env := ∅ }).env.get! "z" == 3
+#guard testProgram.run.env.get! "z" == 3
 
 end Arithmetic
 
