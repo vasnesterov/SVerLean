@@ -1,10 +1,14 @@
 
+#check List.sum
+
+#eval List.sum [1, 2, 3]
+
 namespace hidden
 
 def List.mySum {α : Type} (li : List α) : α :=
   match li with
   | [] => 0
-  | head :: tail => head + tail.mySum
+  | head :: tail => head + List.mySum tail
 
 
 
@@ -27,10 +31,13 @@ def List.mySum {α : Type} (li : List α) : α :=
 
 
 
-
+-- def double {α : Type} (add : α → α → α) (a : α) : α :=
+--   a + a
 
 def double {α : Type} (add : α → α → α) (a : α) : α :=
   add a a
+
+#eval 3 + 3
 
 #eval double Nat.add 3
 
@@ -49,6 +56,8 @@ structure Add (α : Type) where
 def double' {α : Type} (howToAdd : Add α) (a : α) : α :=
   howToAdd.add a a
 
+#eval double' ⟨Nat.add⟩ 3
+
 structure AddZero (α : Type) where
   add : α → α → α
   zero : α
@@ -58,17 +67,38 @@ def List.mySum'' {α : Type} (s : AddZero α) (li : List α) : α :=
   | [] => s.zero
   | head :: tail => s.add head (List.mySum'' s tail)
 
-class Add' (α : Type) where
+class Add' (α : Type) : Type where
   add : α → α → α
 
-def double'' {α : Type} [inst : Add' α] (a : α) : α :=
-  inst.add a a
+#check Add'.add
 
-instance Nat.Add' : Add' Nat where
+def double'' {α β : Type} [Add' α]
+    (a : α) (b : β) : α :=
+  Add'.add a a
+
+instance (priority := 100) Nat.instAdd : Add' Nat where
   add := Nat.add
 
+namespace Mod2
+
+#synth Add' Nat
+
+scoped instance Nat.instAdd' : Add' Nat where
+  add x y := (x + y) % 2
+
+#eval double'' 3
+
+end Mod2
+
+open Mod2
+
 -- def three : Nat := 3
-#eval double'' (3 : Nat)
+#eval double'' (inst := Mod2.Nat.instAdd') 3
+
+instance : Add' String where
+  add := String.append
+
+#eval double'' "hello"
 
 instance Int.Add' : Add' Int where
   add := Int.add
@@ -136,22 +166,15 @@ instance (α : Type) : Inhabited (Option α) where
 
 #eval Array.myGet! #[Option.none, Option.some 3] 123
 
-instance (α β : Type) [instA : Inhabited α] [instB : Inhabited β] : Inhabited (α × β) where
+instance {α β : Type} [instA : Inhabited α] [instB : Inhabited β] :
+    Inhabited (α × β) where
   default := (instA.default, instB.default)
 
 #eval Array.myGet! #[(false, 12), (true, 18)] 1000
 
-def add {α : Type} [inst : Add' α] (x y : α) : α := inst.add x y
-
-infix:60 " +++ " => fun l r => add l r
+infix:60 " +++ " => fun l r => Add'.add l r
 
 #eval 3 +++ 3
-
-
-
-
-
-
 
 
 
@@ -184,8 +207,8 @@ def Nat.toPos (n : Nat) : Pos :=
 
 def two : Pos := 2
 
-instance (n : Nat) : OfNat Pos n where
-  ofNat := Nat.toPos n
+-- instance (n : Nat) : OfNat Pos n where
+--   ofNat := Nat.toPos n
 
 def two' : Pos := 2
 
@@ -196,7 +219,7 @@ instance (n : Nat) [NeZero n] : OfNat Pos n where
 
 def zero : Pos := 0
 
-def two' : Pos := 2
+def two'' : Pos := 2
 
 instance : ToString Pos where
   toString (p : Pos) := toString p.toNat
@@ -210,9 +233,9 @@ def one : Nat := 1
 instance : Coe Pos Nat where
   coe (p : Pos) : Nat := p.toNat
 
-#eval Nat.add two' two'
+#eval Nat.add two'' two''
 
-#eval Int.add two' one
+#eval Int.add two'' one
 
 
 
@@ -225,7 +248,7 @@ instance : Coe Pos Nat where
 def addNatPos (n : Nat) (p : Pos) : Pos :=
   Nat.toPos (p.toNat + n)
 
-class HAdd (α : Type) (β : Type) (γ : Type) where
+class HAdd (α : Type) (β : Type) (γ : outParam Type) where
   add (a : α) (b : β) : γ
 
 instance : HAdd Nat Pos Pos where

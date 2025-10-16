@@ -69,10 +69,37 @@ structure Program (Q : Type) (α : Type) where
 /-- Напишите функцию для запуска программы. Если программа не завершилась через `maxSteps` шагов,
 возвращается дефолтное значение, иначе - результат вычисления программы. -/
 def Program.run {Q α : Type} [Inhabited α] (p : Program Q α) (maxSteps : Nat := 1000) : α :=
-  sorry
+  go p p.initState maxSteps
+where go (p : Program Q α) (state : Q) (maxSteps : Nat) :=
+  match maxSteps with
+  | 0 => default
+  | newMaxSteps + 1 =>
+    match p.next state with
+    | .result res => res
+    | .inProgress nextState =>
+      go p nextState newMaxSteps
 
-/-- Программа, складывающая первые `n` чисел. -/
-def sumFirst (n : Nat) : Program sorry Nat := sorry
+/-- Программа, складывающая первые `n` чисел.
+
+```py
+def sumFisrt(n):
+  res = 0
+  for i in range(n):
+    res += i
+  return res
+```
+-/
+def sumFirst (n : Nat) : Program (Nat × Nat) Nat where
+  initState := (0, 0)
+  next q :=
+    match q with
+    | (res, i) =>
+      if i ≥ n then
+        .result res
+      else
+        .inProgress (res + i, i + 2)
+
+#eval (sumFirst 10).run
 
 /-- Программа, проверяющая что число простое. -/
 def isPrime (n : Nat) : Program sorry Bool := sorry
@@ -147,7 +174,17 @@ instance : Enumerable Int where
 #eval [(num 0 : Int), num 1, num 2, num 3, num 4, num 5]
 
 /-- Напишите функцию которая ищет элемент перечислимого типа `α`, удовлетворяющий условию `p`. -/
-def find {α : Type} [Enumerable α] (p : α → Bool) (maxSteps : Nat := 1000) : Option α := sorry
+def find {α : Type} [Enumerable α] (p : α → Bool) (maxSteps : Nat := 1000) : Option α :=
+  go p maxSteps 0
+where
+  go (p : α → Bool) (maxSteps : Nat) (i : Nat) :=
+    if i ≥ maxSteps then
+      none
+    else
+      if p (num i) then
+        some (num i)
+      else
+        go p maxSteps (i + 1)
 
 #guard find (fun (n : Int) => n * n - n == 6) == some (-2)
 
@@ -190,6 +227,20 @@ instance : Enumerable BinTree := sorry
 содержаещее доказательство простоты. Но пока что с доказательствами мы не работаем.
 -/
 class IsEven (n : Nat)
+
+instance : IsEven 0 := {}
+
+-- Nat.succ (succ m)
+--
+
+instance (n : Nat) [IsEven n] : IsEven (n + 2) := {}
+
+
+-- synth IsEven 4
+--
+#synth IsEven 4
+
+#synth IsEven 5
 
 /- Напишите инстансы для этого класса так чтобы `IsEven n` действительно выводилось
 только для чётных `n`. Возможно понадобится вспомогательный класс.
