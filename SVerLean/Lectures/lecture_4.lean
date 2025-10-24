@@ -2,8 +2,44 @@ import Mathlib
 
 set_option linter.all false
 
-theorem fermat_theorem (n : ℕ) (hn : n > 2) : ¬ ∃ x y z : ℕ, x ^ n + y ^ n = z ^ n :=
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+theorem fermat_theorem (n : ℕ) (hn : n > 2) :
+    ¬ ∃ x y z : ℕ, x ^ n + y ^ n = z ^ n :=
   sorry
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #check 3 + 2 = 5
 #check 3 + 2 = 6
@@ -38,10 +74,11 @@ example (h : 3 + 2 = 6) : 3 + 2 = 5 := sorry
 
 
 example {P Q : Prop} (h : P → Q) (hP : P) : Q :=
-  sorry
+  h hP
 
 
-
+example (x y : ℚ) : (x + y) ^ 2 = x^2 + 2 * x * y + y^2 := by
+  ring
 
 
 
@@ -62,8 +99,6 @@ example {P Q : Prop} (h : P → Q) (hP : P) : Q :=
 
 example {P Q : Prop} (h : P → Q) (hP : P) : Q :=
   h hP
-
-
 
 
 
@@ -208,10 +243,10 @@ example (h1 : P) (h2 : ¬ P) : False := by
 example : P → ¬¬P := by
   intro h1
   -- `change` можно применять и к цели
-  change ¬ P → False
+  change ((P → False) → False)
   intro h2
   -- только что делали
-  change P → False at h2
+  -- change P → False at h2
   apply h2
   exact h1
 
@@ -228,16 +263,22 @@ example : ¬¬P → P := by
     apply h
     exact hP
 
-example : ¬¬P → P := by
+theorem blahh : ¬¬P → P := by
   intro h
   -- Если цель - доказать `P`, то тактика `by_contra h`
   -- добавляет `h : ¬ P` в контекст и заменяет цель на `False`
   -- смысл: доказательство от противного:
   -- "пусть это неверно, тогда ... пришли к противоречию"
   by_contra h'
+  change ¬P → False at h
   apply h
   exact h'
 
+#print axioms blahh
+
+#eval Classical.choice (α := Nat) (by infer_instance)
+
+#check Classical.choice
 
 
 
@@ -246,16 +287,18 @@ example : ¬¬P → P := by
 
 /- # Конъюнкция -/
 
+#check And
+
 #check True ∧ False
 
 -- как использовать `h : P ∧ Q` как гипотезу?
-example : P ∧ Q → P := by
+example : P ∧ (Q ∧ R) → P := by
   intro h
   -- `obtain` "вытаскивает" из `h : P ∧ Q`
   -- отдельные гипотезы `hP : P` и `hQ : Q`
   -- смысл: если известно что `P ∧ Q` верно, то известно
   -- что `P` верно и что `Q` верно
-  obtain ⟨hP, hQ⟩ := h
+  obtain ⟨hP, hQ, hR⟩ := h
   exact hP
 
 -- как доказывать `P ∧ Q`?
@@ -266,15 +309,17 @@ example : P → Q → P ∧ Q := by
   -- Смысл: Если нужно доказать `P ∧ Q`, то нужно доказать
   -- и `P`, и `Q`
   constructor
-  exact hP
-  exact hQ
+  · exact hP
+  · exact hQ
 
 example : P ∧ Q → Q ∧ P := by
   intro h
-  obtain ⟨hP, hQ⟩ := h
-  constructor
-  · exact hQ
-  · exact hP
+  -- obtain ⟨hP, hQ⟩ := h
+  cases h with
+  | intro hP hQ =>
+    constructor
+    · exact hQ
+    · exact hP
 
 
 
@@ -305,13 +350,21 @@ example (h1 : P ∨ Q) (h2 : P → R) (h3 : Q → R) : R := by
   -- `cases h1 with h4 h5` создает заменяет текущую цель на две.
   -- В первой появляется `h4 : P`, во второй `h5 : Q`
   -- и в обоих все еще нужно доказать `R`
-  cases' h1 with h4 h5
-  · apply h2
+  -- obtain h4 | h5 := h1
+  cases h1 with
+  | inl h4 =>
+    apply h2
     exact h4
-  · apply h3
+  | inr h5 =>
+    apply h3
     exact h5
+  -- cases' h1 with h4 h5
+  -- · apply h2
+  --   exact h4
+  -- · apply h3
+  --   exact h5
 
-example : P ∨ Q → Q ∨ P := by
+theorem blah : P ∨ Q → Q ∨ P := by
   intro h
   cases' h with h1 h2
   · right
@@ -319,11 +372,22 @@ example : P ∨ Q → Q ∨ P := by
   · left
     exact h2
 
+#print axioms blah
+
 example : ¬(P ∨ Q) → ¬P ∧ ¬Q := by
-  sorry
+  intro h
+  constructor
+  · intro hP
+    unfold Not at h
+    apply h
+    left
+    exact hP
+  · sorry
 
 example : ¬(P ∧ Q) → ¬P ∨ ¬Q := by
-  sorry
+  intro h
+  by_contra h'
+
 
 
 

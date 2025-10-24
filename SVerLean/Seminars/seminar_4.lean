@@ -24,4 +24,4 @@ example : (P → Q) → ¬Q → ¬P := by
 которая содержит только импликацию, но при этом не доказуема без
 исключенного третьего. -/
 example : ((P → Q) → P) → P := by
-  sorry
+  by_cases hP : P <;> by_cases hQ : Q <;> sorry

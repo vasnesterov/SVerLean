@@ -253,3 +253,55 @@ P.S.: Это учебный пример, **в реальности так де�
 
 /- Сделайте то же что и в задаче выше, но для простых чисел. -/
 class IsPrime (n : Nat)
+
+class IsLT (n m : Nat)
+
+instance (m : Nat) : IsLT 0 (m + 1) := ⟨⟩
+instance (n m : Nat) [IsLT n m] : IsLT (n + 1) (m + 1) := ⟨⟩
+
+-- Nat.succ m =?= Nat.succ (Nat.succ Nat.zero)
+#synth IsLT 0 2
+
+--
+#synth IsLT 1 2
+--
+
+def add' (x y : Nat) [IsLT x y] := x + y
+
+#eval add' 2 1
+
+/-
+```py
+for i in range(2, n):
+  j = 0
+  while j < n:
+    j += i
+  if j > n:
+    continue
+  return false
+return true
+```
+-/
+
+class IsPrimeHelper (n i j : Nat)
+
+
+instance (n j : Nat) : IsPrimeHelper n n j := ⟨⟩
+instance (n i j : Nat) [IsLT j n] [IsPrimeHelper n i (j + i)] :
+  IsPrimeHelper n i j := ⟨⟩
+instance (n i j : Nat) [IsLT n j] [IsPrimeHelper n (i + 1) 0] :
+  IsPrimeHelper n i j := ⟨⟩
+instance (n : Nat) [IsPrimeHelper n 2 0] : IsPrime n := ⟨⟩
+
+
+
+#synth IsPrime 2
+#synth IsPrime 3
+#synth IsPrime 5
+#synth IsPrime 7
+
+#synth IsPrime 1
+#synth IsPrime 4
+#synth IsPrime 6
+#synth IsPrime 8
+#synth IsPrime 9
