@@ -1,7 +1,5 @@
 import Mathlib
 
-/- # TODO: Название -/
-
 /- ## Кванторы: ∀ и ∃ -/
 
 example : ∀ n : ℕ, n + 20 > 8 := by
@@ -13,7 +11,7 @@ example : ∀ n : ℕ, n + 20 > 8 := by
   -- "очевидные" цели в некоторых областях, в частности
   -- про натуральные/целые числа и
   -- пропозициональную логику
-  grind
+  omega
 
 -- квантор `∀` - это просто (зависимая) стрелка
 example : (n : ℕ) → n + 20 > 8 := by
@@ -34,6 +32,7 @@ example (n : ℕ) : n + 20 > 8 := by
 
 example (f : ℕ → ℕ) (hf : ∀ n, f n ≤ 4) : f 20 ≤ 4 := by
   -- это работает, ведь `∀` это просто стрелка
+  -- change (n : ℕ) → f n ≤ 4 at hf
   apply hf
 
 example (f : ℕ → ℕ) (hf : ∀ n, f n ≤ 4) : f 20 ≤ 4 := by
@@ -115,8 +114,6 @@ example (x y z : List String) (hx : x = y ++ z) (hz : z.length > 5) :
   rw [hx, List.length_append]
   grind
 
-#check List.length_tail_add_one
-
 -- `rw` можно использовать с леммами с доп. условиями
 -- (говоря формально `h` может иметь тип `P₁ → P₂ → ... → A = B`,
 -- и тогда `Pᵢ` станут новыми целями)
@@ -158,6 +155,9 @@ example (x y z : List String) (hx : x = y ++ z) (hz : z.length > 5) :
 
 example (n : ℕ) : List.range 0 ++ ([] ++ [(n + 1) * 0]).reverse = [n - n] := by
   simp
+
+example (n : ℕ) : n + 1 = 1 + n := by
+  grind
 
 
 
@@ -285,6 +285,14 @@ example {α β : Type} (f : α → β) (li : List α) :
 
 #check Decidable
 
+def max (a b : Nat) : Nat :=
+  if ∃ n, n ≤ a ∧ a ^ n + b ^ n = 20 then
+    b
+  else
+    a
+
+instance (n m : Nat) : Decidable (n < m) := by sorry
+
 /- Сравнение натуральных чисел разрешимо -/
 example (n m : Nat) : Decidable (n < m) := by
   infer_instance
@@ -300,12 +308,14 @@ example (n : Nat) (P : Nat → Prop) [∀ m, Decidable (P m)] :
     Decidable (∃ m, m ≤ n ∧ P m) := by
   infer_instance
 
+#check Decidable
+
 instance decideLE (n m : Nat) : Decidable (n ≤ m) :=
   match n with
   | 0 => .isTrue (by exact Nat.zero_le m)
   | k + 1 =>
     match m with
-    | 0 => .isFalse (by exact Nat.not_add_one_le_zero k)
+    | 0 => .isFalse (by simp)
     | l + 1 =>
       match decideLE k l with
       | .isTrue proof =>
@@ -323,7 +333,7 @@ example : ∃ m : ℕ, m ≤ 10 ∧ (Nat.Prime (m^2 + m)) := by
   -- то есть аргумент этого конструктора
   decide
 
-example : ∃ x ≤ 5, ∃ y ≤ 5, ∃ z ≤ 5, x ^ 2 + y ^ 2 = z ^ 2 := by
+example : ¬ ∃ x ≤ 5, ∃ y ≤ 5, ∃ z ≤ 5, x ^ 2 + y ^ 2 = z ^ 2 + 1144 := by
   decide
 
 -- выражения if-then-else как
@@ -397,6 +407,10 @@ example {α β : Type} (f g : α → β) (h : ∀ a, f a = g a) : f = g := by
   apply h
 
 def f₁ (n : Nat) : Nat := 7
+
+example : f₁ = f₁ := by rfl
+
+example : f₁ = (fun x => 7) := by rfl
 
 def f₂ (n : Nat) : Nat :=
   match n with
