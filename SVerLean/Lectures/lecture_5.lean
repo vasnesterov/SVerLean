@@ -359,7 +359,7 @@ def ite' {α : Type} (P : Prop) (ifTrue : α) (ifFalse : α)
   | .isFalse _ => ifFalse
 
 -- с неразрешимыми условиями if не работает
--- потому что не понятно как выполнять программу
+-- потому что непонятно как выполнять программу
 def fermat (n : ℕ) : String :=
   if ∃ x y z : ℕ, x ^ n + y ^ n = z ^ n then
     "Exists!"
@@ -426,17 +426,6 @@ example : f₁ = f₂ := by
     simp [f₁, f₂]
     rw [← ih]
     simp [f₁]
-
-
-
-
-
-
-
-
-
-
-
 
 /- ## Пример: max -/
 
