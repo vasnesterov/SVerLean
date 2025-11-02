@@ -95,6 +95,99 @@ instance (P : Nat → Nat → Prop) [inst : ∀ n m, Decidable (P n m)] (m : Nat
 example : ∀ k ≤ 10, ∃ x y, x + y = k ∧ Nat.Prime (x^2 + y^2 + 5) := by
   decide
 
+/- # Правильные скобочные последовательности -/
+
+namespace hidden
+
+inductive Bracket
+| op
+| cl
+
+instance : ToString Bracket where
+  toString b := match b with
+  | .op => "("
+  | .cl => ")"
+
+inductive CorrectBS : (List Bracket) → Prop
+| empty : CorrectBS []
+| append {left right : List Bracket}
+  (h_left : CorrectBS left) (h_right : CorrectBS right) : CorrectBS (left ++ right)
+| enclose {bs : List Bracket} (h : CorrectBS bs) : CorrectBS (.op :: bs ++ [.cl])
+
+theorem CorrectBS.insertBetween {left right : List Bracket} (h : CorrectBS (left ++ right)) :
+    CorrectBS (left ++ [.op, .cl] ++ right) := by
+  sorry -- не нужно делать
+
+/- Стандартный алгоритм проверки скобочной последовательности на правильность.
+```py
+def check(bs):
+  balance = 0
+  for b in bs:
+    if b == '(':
+      balance += 1
+    else:
+      balance -= 1
+      if balance < 0:
+        return False
+  return balance == 0
+```
+как обычно цикл `for` переписываем через рекурсию
+-/
+def check (bs : List Bracket) : Bool :=
+  go bs 0
+where
+  go (bs : List Bracket) (balance : ℕ) : Bool :=
+    match bs with
+    | [] => balance == 0
+    | .op :: tail =>
+      go tail (balance + 1)
+    | .cl :: tail =>
+      match balance with
+      | 0 => false
+      | newInit + 1 =>
+        go tail newInit
+
+-- Подсказка: понадобится `induction ... generalizing`
+theorem check_go_append {left right : List Bracket} {a b : ℕ}
+    (h_left : check.go left a = true) (h_right : check.go right b = true) :
+    check.go (left ++ right) (a + b) = true := by
+  sorry
+
+theorem check_of_correct_eq_true {bs : List Bracket} (h : CorrectBS bs) :
+    check bs = true := by
+  sorry
+
+-- Смысл: если `go bs balance` выдает `true`, то `((...(bs` (где слева `balance` открывающих
+-- скобок) должна быть правильной.
+-- Подсказка: попробуйте `fun_induction`
+-- Подсказка 2: используйте `CorrectBS.insertBetween`
+theorem correct_append_of_check_go_eq_true {bs : List Bracket} {balance : ℕ}
+    (h : check.go bs balance = true) :
+    CorrectBS (List.replicate balance .op ++ bs) := by
+  sorry
+
+theorem correct_of_check_eq_true {bs : List Bracket} (h : check bs = true) :
+    CorrectBS bs := by
+  sorry
+
+-- осталось все вместе скомбинировать
+instance (bs : List Bracket) : Decidable (CorrectBS bs) :=
+  sorry
+
+inductive Tree
+| leaf
+| node (children : List Tree)
+
+def Tree.toBS (tree : Tree) : List Bracket :=
+  match tree with
+  | .leaf => [.op, .cl]
+  | .node children => .op :: children.flatMap (fun child => child.toBS) ++ [.cl]
+
+theorem Tree.toBS_correct (tree : Tree) : CorrectBS tree.toBS := by
+  sorry
+
+end hidden
+
 /- # Разрешимость 2: возрастающие функции
 
 В этой задаче мы покажем разрешимость уравнений `f x = y`
