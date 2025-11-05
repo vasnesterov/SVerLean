@@ -16,7 +16,7 @@ def Vector.sortedContains {n : Nat} (vec : Vector Int n) (x : Int) : Bool :=
 where
   go {m : Nat} (vec : Vector Int (m + 1)) (left right : Fin (m + 1)) : Bool :=
     if right.val - left.val ≤ 1 then
-      if left == x then
+      if vec[left] == x || vec[right] == x then
         true
       else
         false

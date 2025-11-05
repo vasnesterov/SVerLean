@@ -8,6 +8,10 @@ example (f : ℕ → ℕ) (hf : ∀ x y, f (x + y) = f x - f y) : ∀ x, f x = 0
 example {α : Type} (P : α → Prop) : (¬ ∀ x, P x) → ∃ x, ¬ P x := by
   sorry
 
+lemma Nat_wf (P : ℕ → Prop) (h : ∃ x, P x) :
+    ∃ x, P x ∧ ∀ y, P y → x ≤ y := by
+  sorry
+
 /--
 Математический смысл: пусть `f : ℕ → ℕ`, которая
 1. В нуле равна нулю
@@ -17,9 +21,57 @@ example {α : Type} (P : α → Prop) : (¬ ∀ x, P x) → ∃ x, ¬ P x := by
 
 Тогда она принимает все возможные значения.
 -/
-example (f : ℕ → ℕ) (hf₀ : f 0 = 0) (hf₁ : ∀ n, f n ≤ f (n + 1)) (hf₂ : ∀ n, f (n + 1) ≤ f n + 1)
+example (f : ℕ → ℕ) (hf₀ : f 0 = 0) (hf₁ : ∀ n, f n ≤ f (n + 1))
+    (hf₂ : ∀ n, f (n + 1) ≤ f n + 1)
     (h : ∀ C, ∃ x, f x ≥ C) : ∀ C, ∃ x, f x = C := by
-  sorry
+  intro C
+  induction C with
+  | zero => use 0
+  | succ C ih =>
+    obtain ⟨x, ih⟩ := ih
+    specialize h (C + 1)
+    have h' : ∃ x', x' ≥ x ∧ f (x' + 1) ≠ f x' ∧
+        ∀ z ≥ x, f (z + 1) ≠ f z → x' ≤ z := by
+      suffices ∃ x', x' ≥ x ∧ f (x' + 1) ≠ f x' by
+        sorry -- Nat_wf
+      by_contra! h'
+      have h_all : ∀ z ≥ x, f z = C := by
+        intro z hz
+        induction z, hz using Nat.le_induction with
+        | base => assumption
+        | succ z hz ihz =>
+          rw [h', ihz]
+          exact hz
+      obtain ⟨x', hC⟩ := h
+      have h_mono : ∀ n m, n ≤ m → f n ≤ f m := by
+        sorry
+      by_cases hxx' : x' ≤ x
+      · specialize h_mono x' x hxx'
+        omega
+      · push_neg at hxx'
+        specialize h_all x' (by omega)
+        omega
+    obtain ⟨x', h1, h2, h3⟩ := h'
+    use (x' + 1)
+    have hz : ∀ z, x ≤ z → z ≤ x' → f z = C := by
+      intro z hz1 hz2
+      induction z, hz1 using Nat.le_induction with
+      | base => exact ih
+      | succ z hz1 ihz =>
+        specialize ihz (by omega)
+        -- suffices f (z + 1) ≠ C + 1 by grind
+        specialize h3 z hz1
+        contrapose! h3
+        constructor
+        · rwa [ihz]
+          -- exact h3
+        · omega
+    specialize hz x' h1 (by rfl)
+    grind
+
+
+
+
 
 /- # Задача 2. Индукция: NAND-формулы
 
@@ -87,7 +139,7 @@ def Vector.sortedContains {n : Nat} (vec : Vector Int n) (x : Int) : Bool :=
 where
   go {m : Nat} (vec : Vector Int (m + 1)) (left right : Fin (m + 1)) : Bool :=
     if right.val - left.val ≤ 1 then
-      if left == x then
+      if vec[left] == x || vec[right] == x then
         true
       else
         false
