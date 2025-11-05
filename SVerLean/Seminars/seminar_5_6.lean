@@ -1,4 +1,6 @@
-import Mathlib
+import Mathlib.Algebra.GroupWithZero.Nat
+import Mathlib.Algebra.Order.Group.Nat
+import Mathlib.Tactic.Basic
 
 set_option linter.hashCommand false
 
@@ -219,6 +221,8 @@ instance (n : Nat) [NeZero n] : StrictMonotoneFun (fun x ↦ x ^ n) := by
   rw [← StrictMonotoneFun_iff_StrictMono]
   apply Nat.pow_left_strictMono
   exact Ne.symm (NeZero.ne' n)
+
+#check decide
 
 instance (f g : ℕ → ℕ) [StrictMonotoneFun f] [StrictMonotoneFun g] :
     StrictMonotoneFun (fun x ↦ f x + g x) :=

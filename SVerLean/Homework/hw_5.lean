@@ -8,9 +8,30 @@ example (f : ℕ → ℕ) (hf : ∀ x y, f (x + y) = f x - f y) : ∀ x, f x = 0
 example {α : Type} (P : α → Prop) : (¬ ∀ x, P x) → ∃ x, ¬ P x := by
   sorry
 
+theorem Nat.strong_induction_on' {p : ℕ → Prop} (n : ℕ)
+    (h : ∀ (n : ℕ), (∀ m < n, p m) → p n) : p n := by
+  suffices ∀ m ≤ n, p m by
+    exact this n (by rfl)
+  induction n with
+  | zero =>
+    simp
+    apply h
+    simp
+  | succ n ih =>
+    intro m hm
+    apply h
+    intro k hk
+    apply ih
+    omega
+
 lemma Nat_wf (P : ℕ → Prop) (h : ∃ x, P x) :
     ∃ x, P x ∧ ∀ y, P y → x ≤ y := by
-  sorry
+  obtain ⟨x, h⟩ := h
+  induction x using Nat.strong_induction_on with
+  | h x ih =>
+  contrapose! ih
+  obtain ⟨y, h1, h2⟩ := ih x h
+  use y
 
 /--
 Математический смысл: пусть `f : ℕ → ℕ`, которая

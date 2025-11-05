@@ -2,13 +2,14 @@ import Mathlib
 
 /- # calc-mode -/
 
-example (f : ℕ → ℕ) (hf : ∀ x y, f (x + y) = f x + f y) : ∀ n, f n = (f 1) * n := by
+example (f : ℕ → ℕ) (hf : ∀ x y, f (x + y) = f x + f y) :
+    ∀ n, f n = (f 1) * n := by
   intro n
   induction n with
   | zero =>
     simp
     suffices f 0 = f 0 + f 0 by
-      grind
+      omega
     calc
       f 0 = f (0 + 0) := by
         simp
@@ -20,11 +21,19 @@ example (f : ℕ → ℕ) (hf : ∀ x y, f (x + y) = f x + f y) : ∀ n, f n = (
 
 /- # congr -/
 
+example (f : ℤ → ℕ) (x y : ℤ) (h : x = y) : f x = f y := by
+  congr -- f x = f y -----> x = y
+
 example (f : ℤ → ℤ) (g : ℤ → ℤ) (hg : ∀ n, g (g n) = n) :
     f 4 = f (g (g 3) + 1) := by
   congr
   rw [hg]
   norm_num
+
+theorem th : (2^100 : ℤ) + 2^100 = 2^101 := by
+  decide +native
+
+#print axioms th
 
 /- # fun_induction -/
 
@@ -40,11 +49,11 @@ example (n : ℕ) : fib n ≤ 2 ^ n := by
   | case3 m ih1 ih2 =>
     calc
       fib m + fib (m + 1) ≤ 2 ^ m + fib (m + 1) := by
-        gcongr
+        gcongr -- fib m ≤ 2 ^ m
       _ ≤ 2 ^ m + 2 ^ (m + 1) := by
         gcongr
       _ = 3 * 2 ^ m := by
-        simp [pow_succ]
+        rw [pow_succ]
         ring
       _ ≤ 2 ^ (m + 2) := by
         simp [pow_succ]
@@ -149,16 +158,21 @@ inductive Bracket
 inductive CorrectBS : (List Bracket) → Prop
 | empty : CorrectBS []
 | append {left right : List Bracket}
-  (h_left : CorrectBS left) (h_right : CorrectBS right) : CorrectBS (left ++ right)
-| enclose {bs : List Bracket} (h : CorrectBS bs) : CorrectBS (.op :: bs ++ [.cl])
+  (h_left : CorrectBS left) (h_right : CorrectBS right) :
+    CorrectBS (left ++ right)
+| enclose {bs : List Bracket} (h : CorrectBS bs) :
+    CorrectBS (.op :: bs ++ [.cl])
 
 theorem correct_empty : CorrectBS [] := CorrectBS.empty
 
-theorem correct_two : CorrectBS [.op, .cl] := CorrectBS.enclose correct_empty
+theorem correct_two : CorrectBS [.op, .cl] :=
+  CorrectBS.enclose correct_empty
 
-example : CorrectBS [.op, .cl, .op, .cl] := CorrectBS.append correct_two correct_two
+example : CorrectBS [.op, .cl, .op, .cl] :=
+  CorrectBS.append correct_two correct_two
 
-example (bs : List Bracket) (h : CorrectBS bs) : bs.length % 2 = 0 := by
+example (bs : List Bracket) (h : CorrectBS bs) :
+    bs.length % 2 = 0 := by
   induction h with
   | empty => simp
   | @append left right h_left h_right ih_left ih_right =>
