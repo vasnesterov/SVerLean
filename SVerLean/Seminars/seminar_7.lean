@@ -1,6 +1,9 @@
 import Mathlib.Tactic
 import Mathlib.Data.Nat.Basic
 import Mathlib.Logic.Function.Basic
+import Mathlib.Logic.Relation
+
+open Relation
 
 set_option linter.hashCommand false
 
@@ -203,12 +206,7 @@ inductive SmallStep : Stmt × State → Stmt × State → Prop where
 
 infixr:100 " ⇒ " => SmallStep
 
-/-- Рефлексивно-транзитивное замыкание отношения `R`. -/
-inductive RTC {α : Type} (R : α → α → Prop) : α → α → Prop
-| refl (a : α) : RTC R a a
-| trans {a b c : α} (hab : R a b) (hbc : RTC R b c) : RTC R a c
-
-infixr:100 " ⇒* " => RTC SmallStep
+infixr:100 " ⇒* " => ReflTransGen SmallStep
 
 /-- Напишите свойство, которое означает что все переменные в
 состоянии `s` имеют значения меньше `256`. -/
@@ -283,14 +281,14 @@ theorem coinduction {α : Type} {R : α → α → Prop} {P : α → Prop} (M : 
     (h₁ : ∀ c, M c → P c)
     (h₂ : M c₀)
     (h₃ : ∀ c c', M c → R c c' → M c') :
-    ∀ c, RTC R c₀ c → P c := by
-  suffices ∀ c, RTC R c₀ c → M c by
+    ∀ c, ReflTransGen R c₀ c → P c := by
+  suffices ∀ c, ReflTransGen R c₀ c → M c by
     grind
   intro c hc
   clear h₁
   induction hc with
   | refl => assumption
-  | @trans a b c hstep hrest ih => grind
+  | tail => grind
 
 /--
 ```py
