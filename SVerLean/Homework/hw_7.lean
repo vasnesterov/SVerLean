@@ -309,9 +309,11 @@ inductive SmallStep : Stmt × State → Stmt × State → Prop where
 
 infixr:100 " ⇒ " => SmallStep
 
-infixr:100 " ⇒+ " => TransGen SmallStep
+-- infixr:100 " ⇒+ " => TransGen SmallStep
+notation3:100 Ss:101 " ⇒+ " Tt:100 => TransGen SmallStep Ss Tt
 
-infixr:100 " ⇒* " => ReflTransGen SmallStep
+-- infixr:100 " ⇒* " => ReflTransGen SmallStep
+notation3:100 Ss:101 " ⇒* " Tt:100 => ReflTransGen SmallStep Ss Tt
 
 @[simp]
 theorem SmallStep_skip_final (s C) : ¬ (Stmt.skip, s) ⇒ C := by
