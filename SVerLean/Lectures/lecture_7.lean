@@ -34,7 +34,7 @@ inductive Stmt : Type where
   | ifThenElse : (State → Bool) → Stmt → Stmt → Stmt
   | whileDo    : (State → Bool) → Stmt → Stmt
 
-infixr:90 "; " => Stmt.seq
+infixl:90 "; " => Stmt.seq
 
 -- считаем сумму чисел от 0 до 9
 def sum10 : Stmt :=
@@ -162,8 +162,9 @@ end hidden
     (while B do S, s) ⟹ s
 
 Здесь `s(e)` обозначает значение выражения `e` в состоянии `s`,
-а `s[x ↦ s(e)]` обозначает состояние, идентичное `s`, за исключением того,
-что переменная `x` теперь содержит значение `s(e)`.
+а `s[x ↦ s(e)]` обозначает состояние, идентичное `s`, за
+исключением того, что переменная `x` теперь содержит
+значение `s(e)`.
 
 В Lean это суждение соответствует индуктивному предикату,
 а правила вывода - конструкторам этого предиката.
@@ -192,8 +193,8 @@ infix:110 " ⟹ " => BigStep
 
 Пусть дана конкретная программа `S` и состояние `s`.
 Как нам автоматически доказать что `(S, s) ⟹ t`?
-Давайте заведем несколько `simp`-лемм для правил, и при помощи них будем
-использовать `simp` как исполнитель программы.
+Давайте заведем несколько `simp`-лемм для правил, и при помощи
+них будем использовать `simp` как исполнитель программы.
 -/
 
 @[simp]
@@ -250,7 +251,10 @@ theorem BigStep_if_iff (cond St Sf s t) :
 -- возникать бесконечные циклы. Но это можно обойти: см. ниже
 theorem BigStep_while_iff (cond body s t) :
     (Stmt.whileDo cond body, s) ⟹ t ↔
-    if cond s then (body; Stmt.whileDo cond body, s) ⟹ t else s = t where
+    if cond s then
+      (body; Stmt.whileDo cond body, s) ⟹ t
+    else s = t
+where
   mp h := by
     cases h with
     | whileTrue _ _ _ u _ hcond hbody hrest =>
@@ -268,11 +272,11 @@ theorem BigStep_while_iff (cond body s t) :
       assumption
 
 /--
-  ```py
-  cnt = 3
-  while cnt > 0:
-    cnt -= 1
-  ```
+```py
+cnt = 3
+while cnt > 0:
+  cnt -= 1
+```
 -/
 def countdown : Stmt :=
   .assign "cnt" (fun _ => 3);
@@ -291,8 +295,8 @@ theorem countdown_BigStep_zero :
   repeat (first | simp | rw [BigStep_while_iff])
 
 -- Примечание: `repeat (first | simp | rw [BigStep_while_iff])`
--- сносно работает для крошечных программ. Но по-хорошему стоило бы
--- написать отдельную тактику для этой цели.
+-- сносно работает для крошечных программ. Но по-хорошему стоило
+-- бы написать отдельную тактику для этой цели.
 
 -- big-step семантика детерминирована. Доказательство в семинаре
 theorem BigStep_deterministic {S s l r} (hl : (S, s) ⟹ l)
@@ -305,11 +309,11 @@ theorem BigStep_deterministic {S s l r} (hl : (S, s) ⟹ l)
 Big-step семантика имеет следующие недостатки:
 
 * не позволяет рассуждать о промежуточных состояниях;
+* не позволяет выразить незавершаемость или чередование
+  (например, для многопоточности).
 
-* не позволяет выразить незавершаемость или чередование (например, для многопоточности).
-
-__Small-step семантика__ (также называется __структурной операционной семантикой__)
-решает эти проблемы.
+__Small-step семантика__ (также называется
+__структурной операционной семантикой__) решает эти проблемы.
 
 В этой семантике используется суждение вида `(S, s) ⇒ (T, t)`:
 
@@ -321,7 +325,8 @@ __Small-step семантика__ (также называется __струк�
 цепочка переходов `(S₀, s₀) ⇒ (S₁, s₁) ⇒ …`.
 
 Пара `(S, s)` называется __конфигурацией__.
-Она __финальная__, если не существует перехода вида `(S, s) ⇒ _`.
+Она __финальная__, если не существует перехода вида
+`(S, s) ⇒ _`.
 
 Пример:
 
@@ -356,13 +361,13 @@ __Small-step семантика__ (также называется __струк�
 inductive SmallStep : Stmt × State → Stmt × State → Prop where
   | assign (x a s) :
     SmallStep (Stmt.assign x a, s) (Stmt.skip, Function.update s x (a s))
-  | seq_step (S S' T s s') (hS : SmallStep (S, s) (S', s')) :
+  | seqStep (S S' T s s') (hS : SmallStep (S, s) (S', s')) :
     SmallStep (S; T, s) (S'; T, s')
-  | seq_skip (T s) :
+  | seqSkip (T s) :
     SmallStep (Stmt.skip; T, s) (T, s)
-  | if_true (B S T s) (hcond : B s) :
+  | ifTrue (B S T s) (hcond : B s) :
     SmallStep (Stmt.ifThenElse B S T, s) (S, s)
-  | if_false (B S T s) (hcond : ¬ B s) :
+  | ifFalse (B S T s) (hcond : ¬ B s) :
     SmallStep (Stmt.ifThenElse B S T, s) (T, s)
   | whileDo (B S s) :
     SmallStep (Stmt.whileDo B S, s)
@@ -372,6 +377,342 @@ infixr:100 " ⇒ " => SmallStep
 
 infixr:100 " ⇒* " => ReflTransGen SmallStep
 
+/--
+```py
+while True:
+  x = x + 1
+```
+-/
+def endlessInc : Stmt :=
+  .whileDo (fun _ => true) (
+    .assign "x" (fun s => s "x" + 1)
+  )
+
+-- мы можем доказать
+example : (endlessInc, fun _ ↦ 0) ⇒*
+    (endlessInc, fun | "x" => 1 | _ => 0) := by
+  simp [endlessInc]
+  -- начинаем "исполнять программу по шагам"
+  apply ReflTransGen.head
+  -- в некоторых целях появились метапеременные: ?b
+  · apply SmallStep.whileDo
+    -- после этого Lean понимает чему равно ?b
+    -- и подставляет в других целях
+  apply ReflTransGen.head
+  · apply SmallStep.ifTrue
+    rfl
+  apply ReflTransGen.head
+  · apply SmallStep.seqStep
+    apply SmallStep.assign
+  apply ReflTransGen.head
+  · apply SmallStep.seqSkip
+  -- дошли до нужного состояния
+  -- apply ReflTransGen.refl -- не сработает, потому что цель
+  --                         -- не матчится с леммой
+  --                         -- на уровне равенства по определению.
+  -- `convert` работает как `exact`, но вместо равенства по
+  -- определению (`rfl`), она использует `congr`.
+  -- `using` позволяет контроллировать глубину `congr`
+  convert ReflTransGen.refl using 2
+  ext x
+  simp [Function.update_apply]
+  split <;> grind
+
+-- это можно автоматизировать так же как в big-step семантике
+-- при помощи `simp`-лемм
+
+-- `simp`-леммы для `⇒`
+section SmallStep_simp
+
+@[simp]
+theorem SmallStep_skip_final (s C) : ¬ (Stmt.skip, s) ⇒ C := by
+  intro h
+  cases h
+
+@[simp]
+theorem SmallStep_assign_iff (x a s T t) :
+    (Stmt.assign x a, s) ⇒ (T, t) ↔
+      T = .skip ∧ t = Function.update s x (a s) := by
+  constructor
+  · intro h
+    cases h
+    exact ⟨rfl, rfl⟩
+  · intro h
+    rcases h with ⟨rfl, rfl⟩
+    exact SmallStep.assign _ _ _
+
+@[simp]
+theorem SmallStep_seq_step_iff (S T U s u) :
+    (S; T, s) ⇒ (U, u) ↔
+      (S = .skip ∧ U = T ∧ u = s) ∨
+        ∃ S' s',
+          (S, s) ⇒ (S', s') ∧ U = (S'; T) ∧ u = s' := by
+  constructor
+  · intro h
+    cases h with
+    | seqStep _ S1 _ _ s1 hS =>
+      right
+      use S1, u
+    | seqSkip _ _ =>
+      simp
+  · intro h
+    cases h with
+    | inl h' =>
+      rcases h' with ⟨hS, hUT, hu⟩
+      subst hS
+      subst hUT
+      subst hu
+      exact SmallStep.seqSkip _ _
+    | inr h' =>
+      rcases h' with ⟨S1, s1, hS, hUT, hu⟩
+      subst hUT
+      subst hu
+      exact SmallStep.seqStep _ _ _ _ _ hS
+
+@[simp]
+theorem SmallStep_if_iff (cond St Sf s C) :
+    (Stmt.ifThenElse cond St Sf, s) ⇒ C ↔
+      (cond s ∧ C = (St, s)) ∨ (¬ cond s ∧ C = (Sf, s)) := by
+  constructor
+  · intro h
+    cases h with
+    | ifTrue _ _ _ _ hcond => exact Or.inl ⟨hcond, rfl⟩
+    | ifFalse _ _ _ _ hcond => exact Or.inr ⟨hcond, rfl⟩
+  · intro h
+    cases h with
+    | inl h' =>
+      rcases h' with ⟨hcond, rfl⟩
+      exact SmallStep.ifTrue _ _ _ _ hcond
+    | inr h' =>
+      rcases h' with ⟨hcond, rfl⟩
+      exact SmallStep.ifFalse _ _ _ _ hcond
+
+@[simp]
+theorem SmallStep_while_iff (cond body s C) :
+    (Stmt.whileDo cond body, s) ⇒ C ↔
+      C = (Stmt.ifThenElse cond (body; Stmt.whileDo cond body) Stmt.skip, s) := by
+  constructor
+  · intro h
+    cases h
+    rfl
+  · intro h
+    subst h
+    exact SmallStep.whileDo _ _ _
+
+end SmallStep_simp
+
+-- Но `simp`-леммы имеют вид `A ↔ B`, а здесь естественные леммы
+-- имеют вид `A → B`. Поэтому лучше использовать не `simp`, а
+-- `aesop`:
+
+-- `aesop`-леммы для `⇒*`
+section SmallStep_aesop
+
+@[aesop unsafe 80% apply]
+theorem SmallStep'_refl (S s t) (hst : s = t) : (S, s) ⇒* (S, t) := by
+  subst hst
+  exact ReflTransGen.refl
+
+@[simp]
+theorem SmallStep_skip_final' (s T t) : (Stmt.skip, s) ⇒* (T, t) ↔ T = .skip ∧ s = t where
+  mp h := by
+    obtain h | ⟨_, h, _⟩ := ReflTransGen.cases_head h
+    · grind
+    · simp at h
+  mpr h := by
+    rw [h.1, h.2]
+
+@[aesop safe apply]
+theorem SmallStep_assign' (x a s t)
+    (ht : t = Function.update s x (a s)) :
+    (Stmt.assign x a, s) ⇒* (.skip, t) := by
+  apply ReflTransGen.single
+  convert SmallStep.assign _ _ _ using 2
+
+@[aesop safe apply]
+theorem SmallStep_seq_skip' (S T s t)
+    (h : (S, s) ⇒* (T, t)) :
+    (.skip; S, s) ⇒* (T, t) := by
+  apply ReflTransGen.head
+  · apply SmallStep.seqSkip
+  exact h
+
+@[aesop safe apply]
+theorem SmallStep_seq_assign' (S T x a s t)
+    (h : (S, Function.update s x (a s)) ⇒* (T, t)) :
+    (.assign x a; S, s) ⇒* (T, t) := by
+  apply ReflTransGen.head
+  · apply SmallStep.seqStep
+    apply SmallStep.assign
+  apply SmallStep_seq_skip'
+  exact h
+
+@[aesop unsafe 50% apply]
+theorem SmallStep_if_true' (B S T U s u) (hcond : B s)
+    (h : (S, s) ⇒* (U, u)) :
+    (Stmt.ifThenElse B S T, s) ⇒* (U, u) := by
+  apply ReflTransGen.head
+  · apply SmallStep.ifTrue
+    exact hcond
+  exact h
+
+@[aesop unsafe 50% apply]
+theorem SmallStep_if_false' (B S T U s u) (hcond : ¬ B s)
+    (h : (T, s) ⇒* (U, u)) :
+    (Stmt.ifThenElse B S T, s) ⇒* (U, u) := by
+  apply ReflTransGen.head
+  · apply SmallStep.ifFalse
+    exact hcond
+  exact h
+
+@[aesop unsafe 50% apply]
+theorem SmallStep_while_true' (B S U s u) (hcond : B s)
+    (h : (S; .whileDo B S, s) ⇒* (U, u)) :
+    (Stmt.whileDo B S, s) ⇒* (U, u) := by
+  apply ReflTransGen.head
+  · apply SmallStep.whileDo
+  apply SmallStep_if_true'
+  · exact hcond
+  · exact h
+
+@[aesop unsafe 50% apply]
+theorem SmallStep_while_false' (B S s) (hcond : ¬ B s) :
+    (Stmt.whileDo B S, s) ⇒* (Stmt.skip, s) := by
+  apply ReflTransGen.head
+  · apply SmallStep.whileDo
+  apply SmallStep_if_false'
+  · exact hcond
+  · simp
+
+@[aesop unsafe 50% apply]
+theorem SmallStep_seq_if_true' (B S T Q U s u) (hcond : B s)
+    (h : (S; Q, s) ⇒* (U, u)) :
+    (.ifThenElse B S T; Q, s) ⇒* (U, u) := by
+  apply ReflTransGen.head
+  · apply SmallStep.seqStep
+    apply SmallStep.ifTrue
+    exact hcond
+  exact h
+
+@[aesop unsafe 50% apply]
+theorem SmallStep_seq_if_false' (B S T Q U s u) (hcond : ¬ B s)
+    (h : (T; Q, s) ⇒* (U, u)) :
+    (.ifThenElse B S T; Q, s) ⇒* (U, u) := by
+  apply ReflTransGen.head
+  · apply SmallStep.seqStep
+    apply SmallStep.ifFalse
+    exact hcond
+  exact h
+
+@[aesop unsafe 50% apply]
+theorem SmallStep_seq_while_true' (B S Q U s u) (hcond : B s)
+    (h : (S; .whileDo B S; Q, s) ⇒* (U, u)) :
+    (.whileDo B S; Q, s) ⇒* (U, u) := by
+  apply ReflTransGen.head
+  · apply SmallStep.seqStep
+    apply SmallStep.whileDo
+  apply ReflTransGen.head
+  · apply SmallStep.seqStep
+    apply SmallStep.ifTrue
+    exact hcond
+  exact h
+
+@[aesop unsafe 50% apply]
+theorem SmallStep_seq_while_false' (B S Q U s u) (hcond : ¬ B s)
+    (h : (Stmt.skip; Q, s) ⇒* (U, u)) :
+    (.whileDo B S; Q, s) ⇒* (U, u) := by
+  apply ReflTransGen.head
+  · apply SmallStep.seqStep
+    apply SmallStep.whileDo
+  apply ReflTransGen.head
+  · apply SmallStep.seqStep
+    apply SmallStep.ifFalse
+    exact hcond
+  exact h
+
+end SmallStep_aesop
+
+example : (endlessInc, fun _ ↦ 0) ⇒*
+    (endlessInc, fun | "x" => 5 | _ => 0) := by
+  simp [endlessInc]
+  -- теперь `aesop` умеет доказывать такое автоматически
+  aesop
+
+/- # Big-step выражается через small-step -/
+
+theorem SmallStep_seq {S T s u} (h : (S, s) ⇒* (.skip, u)) :
+    (S; T, s) ⇒* (.skip; T, u) := by
+  -- хитрый шаг
+  apply ReflTransGen.lift (fun Ss ↦ (Prod.fst Ss; T, Prod.snd Ss)) _ h
+  intro ⟨S, s⟩ ⟨S', s'⟩ hstep
+  dsimp
+  aesop
+
+theorem SmallStep_seq_trans (S s T t U u) (hS : (S, s) ⇒* (.skip, t)) (hT : (T, t) ⇒* (U, u)) :
+    (S; T, s) ⇒* (U, u) := by
+  have := SmallStep_seq hS (T := T)
+  apply ReflTransGen.trans this
+  aesop
+
+theorem BigStep_SmallStep {Ss t} (h : Ss ⟹ t) :
+    Ss ⇒* (Stmt.skip, t) := by
+  induction h with
+  | skip s => aesop
+  | assign x a s => aesop
+  | seq S T s q u hS hT hS_ih hT_ih =>
+    apply SmallStep_seq_trans
+    · exact hS_ih
+    · exact hT_ih
+  | ifTrue B S T s t hcond hbody hbody_ih =>
+    apply SmallStep_if_true'
+    · exact hcond
+    exact hbody_ih
+  | ifFalse B S T s t hcond hbody hbody_ih =>
+    apply SmallStep_if_false'
+    · exact hcond
+    exact hbody_ih
+  | whileTrue B S s q u hcond hbody hrest hbody_ih hrest_ih =>
+    apply SmallStep_while_true'
+    · exact hcond
+    apply SmallStep_seq_trans
+    · exact hbody_ih
+    · exact hrest_ih
+  | whileFalse B S s hcond =>
+    apply SmallStep_while_false'
+    · exact hcond
+
+theorem BigStep_of_SmallStep_of_BigStep {Ss₀ Ss₁ s₂}
+    (h₁ : Ss₀ ⇒ Ss₁) (h₂ : Ss₁ ⟹ s₂) : Ss₀ ⟹ s₂ := by
+  induction h₁ generalizing s₂ with
+  | assign x a s =>
+    simp at h₂ ⊢
+    rw [h₂]
+  | seqStep S S' T s s' hS ih =>
+    aesop
+  | seqSkip T s =>
+    simpa
+  | ifTrue B S T s hB =>
+    aesop
+  | ifFalse B S T s hB =>
+    aesop
+  | whileDo B S s =>
+    simp at h₂
+    split_ifs at h₂ with h_if
+    · obtain ⟨t, ht1, ht2⟩ := h₂
+      apply BigStep.whileTrue
+      · exact h_if
+      · exact ht1
+      · exact ht2
+    · convert BigStep.whileFalse _ _ _ _ <;> grind
+
+theorem SmallStep_BigStep {Ss t} (h : Ss ⇒* (Stmt.skip, t)) :
+    Ss ⟹ t := by
+  induction h using ReflTransGen.head_induction_on with
+  | refl => aesop
+  | @head SS Tt hstep hrest ih =>
+    apply BigStep_of_SmallStep_of_BigStep hstep ih
+
 theorem BigStep_iff_SmallStep (S s t) :
-    (S, s) ⟹ t ↔ (S, s) ⇒* (Stmt.skip, t) := by
-  sorry
+    (S, s) ⟹ t ↔ (S, s) ⇒* (Stmt.skip, t) where
+  mp h  := BigStep_SmallStep h
+  mpr h := SmallStep_BigStep h
