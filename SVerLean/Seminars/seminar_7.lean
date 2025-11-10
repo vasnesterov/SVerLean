@@ -308,30 +308,71 @@ def goodLoop : Stmt :=
     )
   )
 
-/-- Придумайте инвариант для программы `goodLoop` сохраняющий ограниченность.
+/-- Давайте придумаем инвариант для программы `goodLoop` сохраняющий ограниченность.
 
-Подсказка: используйте перебор случаев: `goodLoopInvariant (S, s)` верен если
-1. S = goodLoop, s любое
-2. S = тело цикла, s любое
+Здесь все банально: мы будем просто делать перебор случаев: `GoodLoopInvariant (S, s)` верен если
+1. S = goodLoop, s "x" < 256
+2. S = тело цикла, s "x" < 256
 3. S = первая ветвь if, s "x" < 64
-и т.д.
+4. S = вторая ветвь if, s "x" < 256
+и так далее.
 
-P.S.: да, это скучно, и есть возможность сделать это изящнее. Но на низком уровне в итоге все
-сводится к этому.
+Дальше мы нам останется доказать что на каждом шаге программы мы переходим из одного случая в
+другой, что из всех случаев следует ограниченность, и что стартовая конфигурация хорошая.
 -/
-def goodLoopInvariant : Stmt × State → Prop := fun (S, s) =>
+
+/- Для удобства вынесем части программы в отдельные определения. -/
+def tBranch : Stmt :=
+  .assign "x" (fun s => s "x" * 3 + 1)
+def fBranch : Stmt :=
+  .assign "x" (fun s => s "x" / 2)
+def body : Stmt :=
+  .ifThenElse (fun s => s "x" < 64) tBranch fBranch
+
+-- проверим себя
+example : goodLoop = .whileDo (fun _ => true) body := by rfl
+
+/-- Определим вспомогательное свойство. -/
+def boundedX (s : State) (n : ℕ) : Prop := s "x" < n ∧ ∀ v, v ≠ "x" → s v = 0
+
+/-- Из него следует ограниченность. -/
+theorem boundedX_bounded {s n} (hs : boundedX s n) (hn : n ≤ 256) : StateBounded s := by
+  simp [StateBounded]
+  intro var
+  by_cases hvar : var = "x"
+  · simp [boundedX] at hs
+    grind
+  · simp [boundedX] at hs
+    grind
+
+/-- Определим инвариант перебором случаев. Заполните `sorry` для верхних границ на переменную
+`x` в каждом случае. -/
+inductive GoodLoopInvariant : Stmt × State → Prop where
+| loop₁ (s) (hs : boundedX s sorry) :
+  GoodLoopInvariant (goodLoop, s)
+| loop₂ (s) (hs : boundedX s sorry) :
+  GoodLoopInvariant (.ifThenElse (fun _ => true) (body; goodLoop) Stmt.skip, s)
+| body (s) (hs : boundedX s sorry) :
+  GoodLoopInvariant (body; goodLoop, s)
+| tBranch (s) (hs : boundedX s sorry) :
+  GoodLoopInvariant (tBranch; goodLoop, s)
+| fBranch (s) (hs : boundedX s sorry) :
+  GoodLoopInvariant (fBranch; goodLoop, s)
+| loop₃ (s) (hs : boundedX s sorry) :
+  GoodLoopInvariant (Stmt.skip; goodLoop, s)
+
+/- Теперь докажите три необходимых свойства: -/
+
+theorem goodLoopInvariant_start : GoodLoopInvariant (goodLoop, fun _ ↦ 0) := by
   sorry
 
-theorem goodLoopInvariant_start : goodLoopInvariant (goodLoop, fun _ ↦ 0) := by
-  sorry
-
-theorem goodLoopInvariant_bounded {S s} (h : goodLoopInvariant (S, s)) :
+theorem goodLoopInvariant_bounded {S s} (h : GoodLoopInvariant (S, s)) :
     StateBounded s := by
   sorry
 
-theorem goodLoopInvariant_step {S S' s s'} (h : goodLoopInvariant (S, s))
+theorem goodLoopInvariant_step {S S' s s'} (h : GoodLoopInvariant (S, s))
     (h_step : SmallStep (S, s) (S', s')) :
-    goodLoopInvariant (S', s') := by
+    GoodLoopInvariant (S', s') := by
   sorry
 
 /-- Теперь можно доказать ограниченность программы `goodLoop`. -/
