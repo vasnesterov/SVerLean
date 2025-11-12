@@ -38,10 +38,12 @@ infixl:90 "; " => Stmt.seq
 
 -- считаем сумму чисел от 0 до 9
 def sum10 : Stmt :=
-  .assign "i" (fun s => 0);
-  .assign "sum" (fun s => 0);
-  .whileDo (fun s => (s "i") < 10)
-    (.assign "sum" (fun s => s "sum" + s "i"))
+  .assign "i" (fun s => 0); -- i := 0
+  .assign "sum" (fun s => 0); -- sum := 0
+  .whileDo (fun s => (s "i") < 10) ( -- while i < 10:
+    .assign "sum" (fun s => s "sum" + s "i"); -- sum := sum + i
+    .assign "i" (fun s => s "i" + 1) -- i := i + 1
+  )
 
 -- бесконечный цикл
 def loop : Stmt :=
@@ -219,7 +221,8 @@ theorem BigStep_assign_iff (x a s t) :
 
 @[simp]
 theorem BigStep_seq_iff (S T s u) :
-    (S; T, s) ⟹ u ↔ (∃ t, (S, s) ⟹ t ∧ (T, t) ⟹ u) where
+    (S; T, s) ⟹ u ↔
+      (∃ t, (S, s) ⟹ t ∧ (T, t) ⟹ u) where
   mp h := by
     cases h with
     | seq S T s t u hS hT =>
@@ -233,11 +236,12 @@ theorem BigStep_seq_iff (S T s u) :
 @[simp]
 theorem BigStep_if_iff (cond St Sf s t) :
     (Stmt.ifThenElse cond St Sf, s) ⟹ t ↔
-    if cond s then (St, s) ⟹ t else (Sf, s) ⟹ t where
+    (if cond s then (St, s) ⟹ t else (Sf, s) ⟹ t) where
   mp h := by
     cases h with
     | ifTrue _ _ _ _ _ hcond hbody =>
-      simp [hcond, hbody]
+      simp [hcond]
+      exact hbody
     | ifFalse _ _ _ _ _ hcond hbody =>
       simp [hcond, hbody]
   mpr h := by
@@ -414,6 +418,7 @@ example : (endlessInc, fun _ ↦ 0) ⇒*
   -- `convert` работает как `exact`, но вместо равенства по
   -- определению (`rfl`), она использует `congr`.
   -- `using` позволяет контроллировать глубину `congr`
+  -- apply ReflTransGen.refl
   convert ReflTransGen.refl using 2
   ext x
   simp [Function.update_apply]
@@ -576,7 +581,7 @@ theorem SmallStep_while_true' (B S U s u) (hcond : B s)
   · exact hcond
   · exact h
 
-@[aesop unsafe 50% apply]
+@[aesop unsafe 80% apply]
 theorem SmallStep_while_false' (B S s) (hcond : ¬ B s) :
     (Stmt.whileDo B S, s) ⇒* (Stmt.skip, s) := by
   apply ReflTransGen.head
@@ -618,7 +623,7 @@ theorem SmallStep_seq_while_true' (B S Q U s u) (hcond : B s)
     exact hcond
   exact h
 
-@[aesop unsafe 50% apply]
+@[aesop unsafe 80% apply]
 theorem SmallStep_seq_while_false' (B S Q U s u) (hcond : ¬ B s)
     (h : (Stmt.skip; Q, s) ⇒* (U, u)) :
     (.whileDo B S; Q, s) ⇒* (U, u) := by
@@ -634,7 +639,7 @@ theorem SmallStep_seq_while_false' (B S Q U s u) (hcond : ¬ B s)
 end SmallStep_aesop
 
 example : (endlessInc, fun _ ↦ 0) ⇒*
-    (endlessInc, fun | "x" => 5 | _ => 0) := by
+    (endlessInc, fun | "x" => 10 | _ => 0) := by
   simp [endlessInc]
   -- теперь `aesop` умеет доказывать такое автоматически
   aesop

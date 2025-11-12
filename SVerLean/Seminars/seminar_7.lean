@@ -70,14 +70,13 @@ def breakDemo : Stmt' := sorry
 
 /--
 ```py
-while True:
-  i = 0
-  sum = 0
-  while i < 3:
-    i = i + 1
-    if i == 2:
-      continue
-    sum = sum + i
+i = 0
+sum = 0
+while i < 3:
+  i = i + 1
+  if i == 2:
+    continue
+  sum = sum + i
 ```
 -/
 def continueDemo : Stmt' := sorry

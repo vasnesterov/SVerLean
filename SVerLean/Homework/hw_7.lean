@@ -247,7 +247,7 @@ def isPrime (n : ℕ) : Stmt :=
 /-- Вспомогательная лемма для доказательства времени работы `isPrime`.
 
 Подсказка: вместо тактики `induction` используйте ссылку на доказываемое утверждение
-и докажите "корректность индукции" при помощи `decreasing_by`. -/
+(`isPrime_sqrt_time_aux`) и докажите "корректность индукции" при помощи `decreasing_by`. -/
 theorem isPrime_sqrt_time_aux (n i result : ℕ) :
     HaltsIn (.whileDo (fun s => s "i" * s "i" ≤ n) (
       .ifThenElse (fun s => n % s "i" == 0) (
