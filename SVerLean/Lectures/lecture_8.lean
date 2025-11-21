@@ -88,21 +88,21 @@ def PartialHoare (P : State → Prop) (S : Stmt)
 -- введем нотацию для троек Хоара
 notation3:101 "{" P:100 "}" S:100 "{" Q:100 "}" => PartialHoare P S Q
 
-#check {fun _ ↦ True}Stmt.skip{fun _ ↦ True}
+#check {fun _ ↦ True}.skip{fun _ ↦ True}
 
 
 
 namespace PartialHoare
 -- докажем правила вывода
 
-theorem skip_intro {P} : { P }Stmt.skip{ P } := by
+theorem skip_intro {P} : { P }.skip{ P } := by
   unfold PartialHoare
   intro s t h hstep
   cases hstep
   exact h
 
 theorem assign_intro (P) {x a} :
-    {fun s ↦ P (Function.update s x (a s))}(Stmt.assign x a){ P } := by
+    {fun s ↦ P (Function.update s x (a s))}(.assign x a){ P } := by
   unfold PartialHoare
   intro s t h hstep
   cases hstep
@@ -411,9 +411,9 @@ theorem add_correct_vcg (x y : ℕ) :
 
 /- # Логика Хоара для тотальной корректности
 
-До этого момента мы рассматривали тройки `{P}S{Q}` которые всегда верны, если
+До этого момента мы рассматривали тройки `{P} S {Q}` которые всегда верны, если
 `S` не завершается. Работать с ними проще, но они не гарантируют завершение
-программы. Чтобы это исправить рассмотрим тройки вида `[P]S[Q]`, которые верны
+программы. Чтобы это исправить рассмотрим тройки вида `[P] S [Q]`, которые верны
 если для любого состояния `s` такого что `P s` программа `S` завершается в
 состоянии `t`, удовлетворяющем `Q`.
 
@@ -433,13 +433,15 @@ theorem add_correct_vcg (x y : ℕ) :
 def StrictHoare (P : State → Prop) (S : Stmt) (Q : State → Prop) : Prop :=
   ∀ s, P s → ∃ t, (S, s) ⟹ t ∧ Q t
 
+-- Мы будем использовать нотацию `[* P *] S [* Q *]`
+-- Без звездочек Lean парсит это как нотацию для обращения к элементу списка
 notation3:101 "[*" P:100 "*]" S:100 "[*" Q:100 "*]" => StrictHoare P S Q
 
-#check [* fun s ↦ True *]Stmt.skip[* fun s ↦ True *]
+#check [* fun s ↦ True *] .skip [* fun s ↦ True *]
 
 namespace StrictHoare
 
-theorem skip_intro {P} : [* P *]Stmt.skip[* P *] := by
+theorem skip_intro {P} : [* P *] .skip [* P *] := by
   unfold StrictHoare
   intro s hP
   use s
@@ -448,7 +450,7 @@ theorem skip_intro {P} : [* P *]Stmt.skip[* P *] := by
   · exact hP
 
 theorem assign_intro (P) {x a} :
-    [* fun s ↦ P (Function.update s x (a s)) *](Stmt.assign x a)[* P *] := by
+    [* fun s ↦ P (Function.update s x (a s)) *] .assign x a [* P *] := by
   unfold StrictHoare
   intro s h
   use Function.update s x (a s)
@@ -457,7 +459,7 @@ theorem assign_intro (P) {x a} :
   · exact h
 
 theorem seq_intro {P Q R S T}
-    (hS : [* P *]S[* Q *]) (hT : [* Q *]T[* R *]) :
+    (hS : [* P *] S [* Q *]) (hT : [* Q *] T [* R *]) :
     [* P *](S; T)[* R *] := by
   unfold StrictHoare at *
   intro s hP
@@ -471,8 +473,8 @@ theorem seq_intro {P Q R S T}
   · exact hR
 
 theorem if_intro {B P Q S T}
-    (hS : [* fun s ↦ P s ∧ B s *]S[* Q *]) (hT : [* fun s ↦ P s ∧ ¬ B s *]T[* Q *]) :
-    [* P *](.ifThenElse B S T)[* Q *] := by
+    (hS : [* fun s ↦ P s ∧ B s *] S [* Q *]) (hT : [* fun s ↦ P s ∧ ¬ B s *] T [* Q *]) :
+    [* P *] .ifThenElse B S T [* Q *] := by
   unfold StrictHoare at *
   intro s hP
   by_cases hB : B s
@@ -492,14 +494,14 @@ theorem if_intro {B P Q S T}
     · exact hQ
 
 theorem while_intro {B P S} (v : State → ℕ)
-    (hS : ∀ v₀, [* fun s ↦ P s ∧ B s ∧ v s = v₀ *]S[* fun s ↦ P s ∧ v s < v₀ *]) :
-    [* P *](.whileDo B S)[* fun s ↦ P s ∧ ¬ B s *] := by
-  sorry
+    (hS : ∀ v₀, [* fun s ↦ P s ∧ B s ∧ v s = v₀ *] S [* fun s ↦ P s ∧ v s < v₀ *]) :
+    [* P *] .whileDo B S [* fun s ↦ P s ∧ ¬ B s *] := by
+  sorry -- в семинаре
 
 theorem consequence {P P' Q Q' S}
-    (h : [* P *]S[* Q *]) (hp : ∀s, P' s → P s)
-    (hq : ∀s, Q s → Q' s) :
-    [* P' *]S[* Q' *] := by
+    (h : [* P *] S [* Q *]) (hp : ∀s, P' s → P s)
+    (hq : ∀ s, Q s → Q' s) :
+    [* P' *] S [* Q' *] := by
   unfold StrictHoare at *
   intro s hP'
   obtain ⟨t, hSt, hQ⟩ := h s (hp s hP')
@@ -509,41 +511,41 @@ theorem consequence {P P' Q Q' S}
   · exact hq t hQ
 
 theorem consequence_left {P' P Q S}
-    (h : [* P *]S[* Q *]) (hp : ∀ s, P' s → P s) :
-    [* P' *]S[* Q *] := by
+    (h : [* P *] S [* Q *]) (hp : ∀ s, P' s → P s) :
+    [* P' *] S [* Q *] := by
   apply consequence
   · exact h
   · exact hp
   · grind
 
 theorem consequence_right {Q Q' P S}
-    (h : [* P *]S[* Q *]) (hq : ∀ s, Q s → Q' s) :
-    [* P *]S[* Q' *] := by
+    (h : [* P *] S [* Q *]) (hq : ∀ s, Q s → Q' s) :
+    [* P *] S [* Q' *] := by
   apply consequence
   · exact h
   · grind
   · exact hq
 
 theorem skip_intro' {P Q} (h : ∀ s, P s → Q s) :
-    [* P *]Stmt.skip[* Q *] := by
+    [* P *] .skip [* Q *] := by
   apply consequence_right
   · exact skip_intro
   · exact h
 
 theorem assign_intro' {P Q x a}
     (h : ∀ s, P s → Q (Function.update s x (a s))) :
-    [* P *](Stmt.assign x a)[* Q *] := by
+    [* P *] .assign x a [* Q *] := by
   apply consequence_left
   · apply assign_intro
   · exact h
 
 theorem seq_intro' {P Q R S T}
-    (hT : [* Q *]T[* R *]) (hS : [* P *]S[* Q *]) :
-    [* P *](S; T)[* R *] := by
+    (hT : [* Q *] T [* R *]) (hS : [* P *] S [* Q *]) :
+    [* P *] (S; T) [* R *] := by
   exact seq_intro hS hT
 
 theorem while_intro' {B P Q S} (I : State → Prop) (v : State → ℕ)
-    (hS : ∀ v₀, [* fun s ↦ I s ∧ B s ∧ v s = v₀ *]S[* fun s ↦ I s ∧ v s < v₀ *])
+    (hS : ∀ v₀, [* fun s ↦ I s ∧ B s ∧ v s = v₀ *] S [* fun s ↦ I s ∧ v s < v₀ *])
     (hPI : ∀ s, P s → I s)
     (hIQ : ∀ s, ¬ B s → I s → Q s) :
     [* P *](.whileDo B S)[* Q *] := by
@@ -552,19 +554,20 @@ theorem while_intro' {B P Q S} (I : State → Prop) (v : State → ℕ)
   · intro s ⟨hI, hnotB⟩
     exact hIQ s hnotB hI
 
-def _root_.Stmt.tannWhileDo (I : State → Prop) (v : State → ℕ) (B : State → Bool) (S : Stmt) : Stmt :=
+def _root_.Stmt.tannWhileDo (I : State → Prop) (v : State → ℕ)
+    (B : State → Bool) (S : Stmt) : Stmt :=
   .whileDo B S
 
 theorem tannWhile_intro {B I Q S v}
-    (hS : ∀ v₀, [* fun s ↦ I s ∧ B s ∧ v s = v₀ *]S[* fun s ↦ I s ∧ v s < v₀ *])
+    (hS : ∀ v₀, [* fun s ↦ I s ∧ B s ∧ v s = v₀ *] S [* fun s ↦ I s ∧ v s < v₀ *])
     (hQ : ∀ s, ¬ B s → I s → Q s) :
-    [* I *](Stmt.tannWhileDo I v B S)[* Q *] :=
+    [* I *] .tannWhileDo I v B S [* Q *] :=
   while_intro' I v hS (by grind) hQ
 
 theorem tannWhile_intro' {B I P Q S v}
-    (hS : ∀ v₀, [* fun s ↦ I s ∧ B s ∧ v s = v₀ *]S[* fun s ↦ I s ∧ v s < v₀ *])
+    (hS : ∀ v₀, [* fun s ↦ I s ∧ B s ∧ v s = v₀ *] S [* fun s ↦ I s ∧ v s < v₀ *])
     (hP : ∀s, P s → I s) (hQ : ∀s, ¬ B s → I s → Q s) :
-    [* P *](Stmt.tannWhileDo I v B S)[* Q *] :=
+    [* P *] .tannWhileDo I v B S [* Q *] :=
   while_intro' I v hS hP hQ
 
 end StrictHoare
@@ -598,9 +601,11 @@ partial def totalVcg : TacticM Unit := do
         (applyConstant ``StrictHoare.if_intro) totalVcg
     | Stmt.tannWhileDo I v B S =>
       if Expr.isMVar P then
+        -- используем `refine` чтобы "сделать `intro`" в одной из целей
         let tac := evalTactic (← `(tactic| refine StrictHoare.tannWhile_intro (fun v₀ ↦ ?_) ?_))
         andThenOnSubgoals tac totalVcg
       else
+        -- используем `refine` чтобы "сделать `intro`" в одной из целей
         let tac := evalTactic (← `(tactic| refine StrictHoare.tannWhile_intro' (fun v₀ ↦ ?_) ?_ ?_))
         andThenOnSubgoals tac totalVcg
     | _ =>
@@ -613,7 +618,7 @@ elab "total_vcg" : tactic => totalVcg
 end metaprogramming
 
 theorem add_total_correct (x y : ℕ) :
-    [* fun s ↦ s "n" = x ∧ s "m" = y *]add[* fun s ↦ s "n" = 0 ∧ s "m" = x + y *] := by
+    [* fun s ↦ s "n" = x ∧ s "m" = y *] add [* fun s ↦ s "n" = 0 ∧ s "m" = x + y *] := by
   let add' : Stmt :=
     .tannWhileDo
     (fun s ↦ s "n" + s "m" = x + y)
@@ -622,6 +627,6 @@ theorem add_total_correct (x y : ℕ) :
       .assign "n" (fun s ↦ s "n" - 1);
       .assign "m" (fun s ↦ s "m" + 1)
     )
-  change [* _ *]add'[* _ *]
+  change [* _ *] add' [* _ *]
   unfold add'
   total_vcg <;> grind
