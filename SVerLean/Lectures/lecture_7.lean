@@ -33,6 +33,7 @@ inductive Stmt : Type where
   | seq        : Stmt → Stmt → Stmt
   | ifThenElse : (State → Bool) → Stmt → Stmt → Stmt
   | whileDo    : (State → Bool) → Stmt → Stmt
+deriving Inhabited
 
 infixl:90 "; " => Stmt.seq
 
