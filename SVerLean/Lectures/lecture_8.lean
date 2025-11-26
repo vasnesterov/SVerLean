@@ -96,22 +96,16 @@ namespace PartialHoare
 -- докажем правила вывода
 
 theorem skip_intro {P} : { P }.skip{ P } := by
-  unfold PartialHoare
-  intro s t h hstep
-  cases hstep
-  exact h
+  simp [PartialHoare]
 
 theorem assign_intro (P) {x a} :
     {fun s ↦ P (Function.update s x (a s))}(.assign x a){ P } := by
-  unfold PartialHoare
-  intro s t h hstep
-  cases hstep
-  exact h
+  simp [PartialHoare]
 
 theorem seq_intro {P Q R S T}
     (hS : { P }S{ Q }) (hT : { Q }T{ R }) :
     { P }(S; T){ R } := by
-  unfold PartialHoare at *
+  simp only [PartialHoare] at *
   intro s t h hstep
   cases hstep with
   | seq _ _ _ u _ hSU hTu =>
