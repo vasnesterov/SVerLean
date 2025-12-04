@@ -1,5 +1,4 @@
 import SVerLean.Lectures.lecture_9
-import Mathlib.Data.Stream.Init
 
 open SetRel
 

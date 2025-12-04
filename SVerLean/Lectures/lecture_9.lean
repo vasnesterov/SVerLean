@@ -32,7 +32,7 @@ __Денотационная семантика__ определяет знач�
 
 Например функция вычисления арифметических выражений
 
-    `eval : ArithExp → ((String → ℤ) → ℤ)`
+    `eval : ArithExpr → ((String → ℤ) → ℤ)`
 
 является денотационной семантикой. Мы хотим то же самое для императивных программ.
 
@@ -47,6 +47,8 @@ __Денотационная семантика__ определяет знач�
 Для `skip`, `:=`, `;` и `if then else` денотационная семантика проста: -/
 
 open SetRel
+
+-- SetRel α β := α → β → Prop
 
 /-- Вспомогательная операция для `if-then-else` (см. ниже) -/
 def SetRel.restrict {α β : Type*} (A : SetRel α β) (P : α → Bool) : SetRel α β :=
@@ -87,7 +89,7 @@ __Неподвижная точка__ (fixed point) функции `F` — эт�
 
     `X = F X`
 
-В общем случае неподвижные точки могут вообще не существовать (например, `f:= Nat.succ`),
+В общем случае неподвижные точки могут вообще не существовать (например, `f := Nat.succ`),
 или их может быть несколько (например, `f = id`). Но при некоторых условиях на `f`
 гарантируется существование единственной __наименьшей неподвижной точки__ и единственной
 __наибольшей неподвижной точки__.
@@ -127,10 +129,10 @@ __монотонной__, если
     `a₁ ≤ a₂ → f a₁ ≤ f a₂`   для всех `a₁`, `a₂`
 
 Многие операции над множествами (например, `∪`), отношениями (например, `○`) и функциями
-(например, `fun x ↦ x`, `fun _ ↦ k`, `∘`) являются монотонными или сохраняют монотонность.
+(например, `fun x ↦ x`, `fun _ ↦ const`, `∘`) являются монотонными или сохраняют монотонность.
 
-Все монотонные функции `f : Set α → Set α` допускают наименьшие и наибольшие неподвижные точки.
-На самом деле это верно если мы заменим `Set α` на любую полную решётку.
+Все монотонные функции `f : Set α → Set α` допускают наименьшие и наибольшие
+неподвижные точки. На самом деле это верно если мы заменим `Set α` на любую полную решётку.
 
 ## Полные решётки
 
@@ -226,6 +228,14 @@ theorem denote_whileDo (B S) :
 def DenoteEquiv (S₁ S₂ : Stmt) : Prop :=
   ⟦S₁⟧ = ⟦S₂⟧
 
+instance : Setoid (Stmt)  where
+  r := DenoteEquiv
+  iseqv := by
+    constructor
+    · grind [DenoteEquiv]
+    · grind [DenoteEquiv]
+    · grind [DenoteEquiv]
+
 infix:50 (priority := high) " ~ " => DenoteEquiv
 
 /- Из определения очевидно, что `~` является отношением эквивалентности.
@@ -237,13 +247,13 @@ lemma DenoteEquiv.whileStep_congr {B S₁ S₂}
       (hS : S₁ ~ S₂) :
     whileStep B S₁ = whileStep B S₂ := by
   simp [DenoteEquiv, whileStep] at *
-  simp [*]
+  rw [hS]
 
 theorem DenoteEquiv.seq_congr {S₁ S₂ T₁ T₂ : Stmt}
       (hS : S₁ ~ S₂) (hT : T₁ ~ T₂) :
     S₁; T₁ ~ S₂; T₂ := by
   simp [DenoteEquiv] at *
-  simp [*]
+  rw [hS, hT]
 
 theorem DenoteEquiv.if_congr {B} {S₁ S₂ T₁ T₂ : Stmt}
       (hS : S₁ ~ S₂) (hT : T₁ ~ T₂) :
@@ -298,6 +308,7 @@ theorem denote_of_BigStep (Ss : Stmt × State) (t : State)
   | ifTrue B S T s t hB hS ih => simp_all [SetRel.restrict]
   | ifFalse B S T s t hB hT ih => simp_all [SetRel.restrict]
   | whileTrue B S s t u hB hS hw ihS ihw =>
+    simp at ihS ihw ⊢
     rw [denote_whileDo]
     left
     simp [SetRel.restrict]
@@ -323,17 +334,17 @@ theorem BigStep_of_denote (S : Stmt) (s t : State) (h : (s, t) ∈ ⟦S⟧) :
     · apply BigStep.ifTrue <;> grind
     · apply BigStep.ifFalse <;> grind
   | whileDo B S ihS =>
-    let F (B : State → Bool) (S : Stmt) : SetRel State State :=
+    let X (B : State → Bool) (S : Stmt) : SetRel State State :=
       {(s, t) | (Stmt.whileDo B S, s) ⟹ t}
-    change (s, t) ∈ F B S
-    suffices whileStep B S (F B S) ⊆ F B S by
+    change (s, t) ∈ X B S
+    suffices whileStep B S (X B S) ⊆ X B S by
       have := OrderHom.lfp_le _ this -- здесь мы впервые используем то что наша неподвижная точка
                                      -- наименьшая
       apply this
       simp [denote] at h
       exact h
     intro (s, t) h
-    simp [whileStep, F, SetRel.restrict] at h ⊢
+    simp [whileStep, X, SetRel.restrict] at h ⊢
     obtain ⟨⟨u, hsu, hut⟩, hB⟩ | ⟨hst, hB⟩ := h
     · apply BigStep.whileTrue
       · exact hB
@@ -356,12 +367,12 @@ theorem denote_Iff_BigStep (S : Stmt) (s t : State) :
 некоторых монотонных отображений (каких?). -/
 
 inductive Awhile (B : State → Bool) (X : SetRel State State) :
-    State → State → Prop
+    SetRel State State -- State × State → Prop
   | loop {s t u} (hcond : B s) (hbody : (s, t) ∈ X)
-      (hrest : Awhile B X t u) :
-    Awhile B X s u
+      (hrest : Awhile B X (t, u)) :
+    Awhile B X (s, u)
   | exit {s} (hcond : ¬ B s) :
-    Awhile B X s s
+    Awhile B X (s, s)
 
 def denote' (S : Stmt) : SetRel State State :=
   match S with
@@ -370,4 +381,4 @@ def denote' (S : Stmt) : SetRel State State :=
     {(p, q) | q = Function.update p x (a p)}
   | Stmt.seq S T          => denote S ○ denote T
   | Stmt.ifThenElse B S T => (denote S ⇃ B) ∪ (denote T ⇃ (fun p ↦ ¬ B p))
-  | Stmt.whileDo B S      => {(p, q) | Awhile B (denote S) p q}
+  | Stmt.whileDo B S      => Awhile B (denote S)
