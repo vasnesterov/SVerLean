@@ -5,9 +5,6 @@ open Std.Do
 
 set_option mvcgen.warning false
 
-
-/- # Задача 0.  -/
-
 /- # Задача 1. Снова Фибоначчи -/
 
 namespace Problem1
