@@ -92,7 +92,7 @@ def findCollision (hash : ℕ → α) : RandT (Except String) (ℕ × ℕ) := do
 def test (hash : ℕ → α) : IO Bool := do
   let .ok (x, y) := (findCollision hash).run' (ULift.up <| mkStdGen 42) | return false
   dbg_trace (x, y)
-  return hash x == hash y
+  return x != y && hash x == hash y
 
 /-- Некоторая хеш-функция -/
 def murmur3 (x₀ : ℕ) := Id.run do

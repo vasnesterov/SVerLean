@@ -44,7 +44,28 @@ def Stmt.unrolledFor (i : String) (start stop : ℕ) (body : Stmt) : Stmt :=
 def PreservesCounter (i : String) (body : Stmt) : Prop :=
   ∀ val, {fun s ↦ s i = val}body{fun s ↦ s i = val}
 
-/-- Докажите что размотка цикла сохраняет семантику. -/
+-- пригодится дальше. Кроме того таким образом можно доказывать и многие другие вспомогательные
+-- утверждения
+theorem seq_assoc (A B C : Stmt) :
+    (A; B); C ≈ A; (B; C) := by
+  simp [Stmt.equiv_def, DenoteEquiv, SetRel.comp]
+  grind
+
+theorem assign_if_true_equiv (x : String) (val : ℕ) (B : ℕ → Bool) (S T : Stmt) (h : B val) :
+    (.assign x (fun _ ↦ val); .ifThenElse (fun s => B (s x)) S T) ≈ (.assign x (fun _ ↦ val); S) := by
+  sorry
+
+theorem assign_if_false_equiv (x : String) (val : ℕ) (B : ℕ → Bool) (S T : Stmt) (h : ¬ B val) :
+    (.assign x (fun _ ↦ val); .ifThenElse (fun s => B (s x)) S T) ≈ (.assign x (fun _ ↦ val); T) := by
+  sorry
+
+/-- Докажите что размотка цикла сохраняет семантику.
+
+Подсказка: пользуйтесь леммами выше. При необходимости можно ввести и другие.
+В авторском решении используются только эти и те что были в лекции.
+
+Подсказка 2: для 
+-/
 theorem unrolledFor_correct (i : String) (start stop : ℕ) (body : Stmt)
     (h : PreservesCounter i body) :
     ⟦Stmt.for i start stop body⟧ = ⟦Stmt.unrolledFor i start stop body⟧ := by

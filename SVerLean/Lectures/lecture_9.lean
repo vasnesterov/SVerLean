@@ -223,10 +223,12 @@ theorem denote_whileDo (B S) :
 /- ## Применение к эквивалентности программ
 
 На основе денотационной семантики мы можем говорить об эквивалентности программ:
-`S₁ ~ S₂`. -/
+`S₁ ≈ S₂`. -/
 
 def DenoteEquiv (S₁ S₂ : Stmt) : Prop :=
   ⟦S₁⟧ = ⟦S₂⟧
+
+/- Из определения очевидно, что `DenoteEquiv` является отношением эквивалентности. -/
 
 instance : Setoid (Stmt)  where
   r := DenoteEquiv
@@ -236,35 +238,33 @@ instance : Setoid (Stmt)  where
     · grind [DenoteEquiv]
     · grind [DenoteEquiv]
 
-infix:50 (priority := high) " ~ " => DenoteEquiv
+def Stmt.equiv_def {S₁ S₂ : Stmt} : S₁ ≈ S₂ ↔ DenoteEquiv S₁ S₂ := by rfl
 
-/- Из определения очевидно, что `~` является отношением эквивалентности.
-
+/-
 Эквивалентность программ может использоваться для замены подпрограмм другими
 подпрограммами с той же семантикой. Это достигается следующими правилами конгруэнтности: -/
-
 lemma DenoteEquiv.whileStep_congr {B S₁ S₂}
-      (hS : S₁ ~ S₂) :
+      (hS : S₁ ≈ S₂) :
     whileStep B S₁ = whileStep B S₂ := by
-  simp [DenoteEquiv, whileStep] at *
+  simp [whileStep] at *
   rw [hS]
 
 theorem DenoteEquiv.seq_congr {S₁ S₂ T₁ T₂ : Stmt}
-      (hS : S₁ ~ S₂) (hT : T₁ ~ T₂) :
-    S₁; T₁ ~ S₂; T₂ := by
-  simp [DenoteEquiv] at *
+      (hS : S₁ ≈ S₂) (hT : T₁ ≈ T₂) :
+    S₁; T₁ ≈ S₂; T₂ := by
+  simp [Stmt.equiv_def, DenoteEquiv] at *
   rw [hS, hT]
 
 theorem DenoteEquiv.if_congr {B} {S₁ S₂ T₁ T₂ : Stmt}
-      (hS : S₁ ~ S₂) (hT : T₁ ~ T₂) :
-    Stmt.ifThenElse B S₁ T₁ ~ Stmt.ifThenElse B S₂ T₂ := by
-  simp [DenoteEquiv] at *
+      (hS : S₁ ≈ S₂) (hT : T₁ ≈ T₂) :
+    Stmt.ifThenElse B S₁ T₁ ≈ Stmt.ifThenElse B S₂ T₂ := by
+  simp [Stmt.equiv_def, DenoteEquiv] at *
   simp [*]
 
 theorem DenoteEquiv.while_congr {B} {S₁ S₂ : Stmt}
-      (hS : S₁ ~ S₂) :
-    Stmt.whileDo B S₁ ~ Stmt.whileDo B S₂ := by
-  simp [DenoteEquiv, denote] at *
+      (hS : S₁ ≈ S₂) :
+    Stmt.whileDo B S₁ ≈ Stmt.whileDo B S₂ := by
+  simp [Stmt.equiv_def, DenoteEquiv, denote] at *
   rw [whileStep_congr]
   exact hS
 
@@ -273,22 +273,22 @@ theorem DenoteEquiv.while_congr {B} {S₁ S₂ : Stmt}
 Давайте докажем некоторые эквивалентности программ. -/
 
 theorem DenoteEquiv.skip_assign_id {x} :
-    Stmt.assign x (fun s ↦ s x) ~ Stmt.skip := by
-  simp [DenoteEquiv, SetRel.id]
+    Stmt.assign x (fun s ↦ s x) ≈ Stmt.skip := by
+  simp [Stmt.equiv_def, DenoteEquiv, SetRel.id]
   grind
 
 theorem DenoteEquiv.seq_skip_left {S} :
-    Stmt.skip; S ~ S := by
-  simp [DenoteEquiv, SetRel.comp]
+    Stmt.skip; S ≈ S := by
+  simp [Stmt.equiv_def, DenoteEquiv, SetRel.comp]
 
 theorem DenoteEquiv.seq_skip_right {S} :
-    S; Stmt.skip ~ S := by
-  simp [DenoteEquiv, SetRel.comp]
+    S; Stmt.skip ≈ S := by
+  simp [Stmt.equiv_def, DenoteEquiv, SetRel.comp]
 
 theorem DenoteEquiv.if_seq_while {B S} :
     Stmt.ifThenElse B (S; Stmt.whileDo B S) Stmt.skip
-    ~ Stmt.whileDo B S := by
-  simp [DenoteEquiv]
+    ≈ Stmt.whileDo B S := by
+  simp [Stmt.equiv_def, DenoteEquiv]
   conv => rhs; rw [denote_whileDo]
   simp
 

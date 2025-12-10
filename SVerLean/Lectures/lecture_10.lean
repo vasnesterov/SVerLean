@@ -13,7 +13,7 @@ open Std.Do
 функциональном стиле, она может быть неэффективной по сравнению с императивной реализацией.
 
 К нашему счастью, есть элегантный способ добавить все эти возможности в функциональный код и
-"взять лучшее из обоих миров". Ключевой инструмент для этого -- *монады*.
+"взять лучшее из обоих миров". Ключевой инструмент для этого -- монады.
 
 Практически весь код на функциональных языках программирования, который реально используется,
 использует монады.
@@ -159,9 +159,11 @@ def sum257Do (ns : List ℕ) : Option ℕ := do
 --------------------- | -------------------------------------------------------
 `Id`                  | без эффектов
 `Option`              | простые исключения
-`Except α`            | исключения типа `α` (например если `α = OSError` то это будут исключения типа "не удалось открыть файл" и т.п.)
+`Except ε`            | исключения типа `ε` (например если `ε = OSError` то это будут исключения типа "не удалось открыть файл" и т.п.)
 `fun α ↦ σ → α × σ`  | изменяемое состояние типа `σ` (мутабельные переменные)
+`StateM σ`
 `fun α ↦ t → α`      | неизменяемая переменная типа `t` (например, конфиг)
+`ReaderM t`
 `fun α ↦ String × α` | добавление текстового вывода (например, для логирования)
 `IO`                  | взаимодействие с операционной системой
 `TacticM`             | взаимодействие с tactic state
@@ -175,7 +177,7 @@ def sum257Do (ns : List ℕ) : Option ℕ := do
 Монады позволяют нам писать императивный код в функциональных языках благодаря `do`-нотации.
 
 Кроме того они поддерживают общие операции, такие как
-`List.mapM {α β : Type} : (α → m β) → List α → m (List β)`
+`List.mapM {m : Type → Type} [Monad m] {α β : Type} : (α → m β) → List α → m (List β)`
 которые работают единообразно для всех монад.
 Операции `bind` и `pure` должны подчиняться трём законам.
 
@@ -264,7 +266,6 @@ instance Id.LawfulMonad : LawfulMonad Id where
     intro α β γ f g ma
     rfl
 
-
 /- ## Базовые исключения
 
 Как мы видели выше, тип опции предоставляет базовый механизм исключений. -/
@@ -340,19 +341,19 @@ instance StateM.LawfulMonad {σ : Type} : LawfulMonad (StateM σ) where
   bind_pure  := by intro α ma; rfl
   bind_assoc := by intro α β γ f g ma; rfl
 
-def max : List ℕ → StateM ℕ (List ℕ)
+def maxs : List ℕ → StateM ℕ (List ℕ)
   | []      => pure []
   | n :: ns => do
     let prev ← StateM.get
     if n < prev then
-      max ns
+      maxs ns
     else
       StateM.set n
-      let ns' ← max ns
+      let ns' ← maxs ns
       pure (n :: ns')
 
-#eval max [1, 2, 3, 2] 0
-#eval max [1, 2, 3, 2, 4, 5, 2] 0
+#eval maxs [1, 2, 3, 2] 0
+#eval maxs [1, 2, 3, 2, 4, 5, 2] 0
 
 
 /- ## Недетерминизм
@@ -379,7 +380,7 @@ instance Set.LawfulMonad : LawfulMonad Set where
     aesop
 
 /- `List.mapM` работает единообразно для всех монад. -/
-def List.mapM {m : Type → Type} [LawfulMonad m] {α β : Type}
+def List.mapM {m : Type → Type} [Monad m] {α β : Type}
     (f : α → m β) :
   List α → m (List β)
   | []      => pure []
@@ -411,15 +412,13 @@ do-нотация не только дает синтаксический сах
 Рассмотрим примеры
 -/
 
-#check ForIn
-
 -- 1. Мы используем монаду Id без эффектов, просто чтобы иметь доступ к `do`-нотации
 def countZeroes (arr : Array Int) : Id Nat := do
   let mut cnt := 0 -- 2. Мутабельная переменная
   for elem in arr do -- 3. Цикл `for` по элементам массива (благодаря классу ForIn)
     if elem == 0 then -- 4. `if` без `else`
       cnt := cnt + 1
-  pure cnt
+  return cnt -- 5. return
 
 -- обычно вместо `Id` в типе пишут `Id.run` перед `do`
 def findFirstEven (arr : Array Int) : Option Int := Id.run do
@@ -509,7 +508,6 @@ def test : BankM Int := do
 Подробнее см. https://lean-lang.org/doc/reference/latest/The--mvcgen--tactic
 -/
 
-
 def mySum (l : Array Nat) : Nat := Id.run do
   let mut out := 0
   for i in l do
@@ -567,21 +565,19 @@ theorem nodup_correct (l : List Int) : nodup l ↔ l.Nodup := by
         ⌜(∀ x, x ∈ seen ↔ x ∈ xs.prefix) ∧ xs.prefix.Nodup⌝)
   with grind
 
-
 structure Supply where
   counter : Nat
 
 def mkFresh : StateM Supply Nat := do
-  let n ← (·.counter) <$> get
+  let n := (← get).counter
   modify fun s => { s with counter := s.counter + 1 }
-  pure n
+  return n
 
 def mkFreshN (n : Nat) : StateM Supply (List Nat) := do
   let mut acc := #[]
   for _ in [:n] do
     acc := acc.push (← mkFresh)
-  pure acc.toList
-
+  return acc.toList
 
 theorem mkFreshN_correct (n : Nat) (s : Supply) : ((mkFreshN n).run' s).Nodup := by
   -- Focus on `(mkFreshN n).run' s`.
@@ -601,7 +597,6 @@ theorem mkFreshN_correct (n : Nat) (s : Supply) : ((mkFreshN n).run' s).Nodup :=
       ⌜(∀ x ∈ acc, x < state.counter) ∧ acc.toList.Nodup⌝
   with grind
 
-
 @[spec]
 theorem mkFresh_spec (c : Nat) :
     ⦃fun state => ⌜state.counter = c⌝⦄
@@ -609,6 +604,8 @@ theorem mkFresh_spec (c : Nat) :
     ⦃⇓ r state => ⌜r = c ∧ c < state.counter⌝⦄ := by
   -- Unfold `mkFresh` and blast away:
   mvcgen [mkFresh] with grind
+
+#check SPred
 
 @[spec]
 theorem mkFreshN_spec (n : Nat) :
@@ -628,8 +625,6 @@ theorem mkFreshN_correct_compositional (n : Nat) (s : Supply) :
   apply StateM.of_wp_run'_eq h
   mvcgen
 
-
-
 structure TwoVals where
   x : Nat
   y : Nat
@@ -639,7 +634,7 @@ def swap : StateM TwoVals Unit := do
 
 @[spec]
 theorem swap_spec (a b : Nat) :
-    ⦃fun state => ⌜state.x = a ∧ state.y = b⌝⦄swap⦃⇓ r state => ⌜state.x = b ∧ state.y = a⌝⦄ := by
+    ⦃fun state => ⌜state.x = a ∧ state.y = b⌝⦄swap⦃⇓ _ state => ⌜state.x = b ∧ state.y = a⌝⦄ := by
   mvcgen [swap]
   grind
 
@@ -651,3 +646,30 @@ theorem swap_swap_spec (s : TwoVals) :
   generalize h : swap.run s = x
   apply StateM.of_wp_run_eq h
   mvcgen
+
+namespace hidden
+
+structure Supply where
+  counter : Nat
+  limit : Nat
+  property : counter ≤ limit
+
+def mkFresh : EStateM String Supply Nat := do
+  let supply ← get
+  if h : supply.counter = supply.limit then
+    throw s!"Supply exhausted: {supply.counter} = {supply.limit}"
+  else
+    let n := supply.counter
+    have := supply.property
+    set { supply with counter := n + 1, property := by grind }
+    pure n
+
+@[spec]
+theorem mkFresh_spec (c : Nat) :
+    ⦃fun state => ⌜state.counter = c⌝⦄
+    mkFresh
+    ⦃post⟨fun r state => ⌜r = c ∧ c < state.counter⌝,
+          fun _ state => ⌜c = state.counter ∧ c = state.limit⌝⟩⦄ := by
+  mvcgen [mkFresh] with grind
+
+end hidden
