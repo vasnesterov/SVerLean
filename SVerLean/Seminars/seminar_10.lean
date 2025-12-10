@@ -4,6 +4,7 @@ import Std
 open Std.Do
 
 set_option mvcgen.warning false
+set_option linter.hashCommand false
 
 /- # Задача 1. Снова Фибоначчи -/
 
@@ -25,7 +26,10 @@ theorem fibId_correct (n : ℕ) : fibId n = fib n := by
 
 end Problem1
 
-/- # Задача 2. Снова скобочные последовательности -/
+/- # Задача 2. Снова скобочные последовательности
+
+(Пользуйтесь вашими решениями из пятого семинара)
+-/
 
 namespace Problem2
 
@@ -55,6 +59,10 @@ def check (seq : List Bracket) : Bool := Id.run do
 #guard ! check [.op, .cl, .cl, .op]
 #guard check [.op, .cl, .op, .cl]
 #guard check [.op, .op, .cl, .cl]
+
+/-- Баланс скобочной последовательности. Пригодится для спецификации. -/
+def balance (seq : List Bracket) : Int :=
+  seq.map (fun | .cl => -1 | .op => 1) |>.sum
 
 /-- Докажите корректность `check` при помощи `mvcgen`.
 Добавьте леммы с аттрибутом `grind` до этой теоремы, так чтобы её доказательство не содержало
@@ -156,7 +164,8 @@ theorem pushPoint_correct (p : α) :
     ⦃fun s => ⌜pathLength s.points.toList = s.length⌝⦄pushPoint (α := α) p⦃⇓ _ s => ⌜pathLength s.points.toList = s.length⌝⦄ := by
   sorry
 
-/-- Меняет местами `i`-ый и `i + 1`-ый города, если это уменьшает длину пути. -/
+/-- Меняет местами `i`-ый и `i + 1`-ый города, если это уменьшает длину пути, и обновляет
+`length` за O(1). -/
 noncomputable def swapPointsIfShorter (i : ℕ) : PathM α Unit := do
   modify (fun s =>
     if h : i + 1 < s.points.size then
