@@ -2,6 +2,8 @@ import SVerLean.Lectures.lecture_8
 import SVerLean.Lectures.lecture_9
 import Mathlib
 
+set_option linter.style.longLine false
+
 open Classical
 
 /- # Задача 1. Размотка циклов
@@ -64,7 +66,8 @@ theorem assign_if_false_equiv (x : String) (val : ℕ) (B : ℕ → Bool) (S T :
 Подсказка: пользуйтесь леммами выше. При необходимости можно ввести и другие.
 В авторском решении используются только эти и те что были в лекции.
 
-Подсказка 2: для 
+Подсказка 2: для того чтобы использовать условие `PreservesCounter i body` переведите
+его с языка троек Хоара на язык денотационной семантики при помощи `denote_Iff_BigStep`
 -/
 theorem unrolledFor_correct (i : String) (start stop : ℕ) (body : Stmt)
     (h : PreservesCounter i body) :
@@ -203,6 +206,12 @@ instance (α : Type) : PartialOrder (Option α) where
   le_trans a b c := by grind
   le_antisymm a b := by grind
 
+/- Выключим стандартные инстансы для порядка на `Option`. Порядок который мы введем
+будет отличаться от них, и Lean может неверно трактовать `x ≤ y` используя
+станадртный порядок, когда мы имеем в виду наш. -/
+attribute [-instance] instLEOption
+attribute [-instance] instLTOption
+
 @[simp]
 lemma none_le {α : Type} (x : Option α) : none ≤ x := by
   right
@@ -266,5 +275,8 @@ noncomputable def loop := ωSup <| iterateChain Loop.toOrderHom (fun _ ↦ none)
 
 theorem loop_rec (n : ℕ) : (loop n) = loop (n + 1) := by
   sorry
+
+/- Вопрос на засыпку: придумайте монотонное отображение из `ℕ → Option ℕ` в себя которое не
+сохраняет супремумы цепей. -/
 
 end Problem3
