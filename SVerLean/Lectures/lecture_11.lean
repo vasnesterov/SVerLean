@@ -1,6 +1,6 @@
 import Mathlib
 
-open Filter Topology
+open Set Filter Topology
 
 -- Правда ли что если `f` и `g` не имеют предела в точке `x`, то `f + g` не имеет предела в этой
 -- точке? (ответ: нет)
